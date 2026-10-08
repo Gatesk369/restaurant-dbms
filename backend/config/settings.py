@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 from dotenv import load_dotenv
 
@@ -27,7 +28,7 @@ load_dotenv(BASE_DIR.parent / ".env")
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "False").strip().lower() in {"1", "true", "yes", "on"}
 
 ALLOWED_HOSTS = []
 
@@ -50,15 +51,13 @@ INSTALLED_APPS = [
     "payments",
 ]
 
-AUTH_USER_MODEL = "accounts.Staff"
-
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -86,10 +85,28 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+database_url_name = (
+    "DATABASE_URL_UNPOOLED"
+    if os.environ.get("USE_UNPOOLED_DATABASE_URL") == "1"
+    else "DATABASE_URL"
+)
+database_url = os.environ.get(database_url_name, "").strip()
+if not database_url:
+    raise ValueError(f"{database_url_name} must be set in the environment or .env")
+
+parsed_database_url = urlsplit(database_url)
+if parsed_database_url.scheme not in {"postgres", "postgresql"}:
+    raise ValueError(f"{database_url_name} must be a PostgreSQL connection URL")
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(parsed_database_url.path.lstrip("/")),
+        "USER": unquote(parsed_database_url.username or ""),
+        "PASSWORD": unquote(parsed_database_url.password or ""),
+        "HOST": parsed_database_url.hostname or "",
+        "PORT": str(parsed_database_url.port or ""),
+        "OPTIONS": dict(parse_qsl(parsed_database_url.query)),
     }
 }
 

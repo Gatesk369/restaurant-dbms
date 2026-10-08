@@ -1,78 +1,103 @@
-from django.conf import settings
+"""Raw SQL access and unmanaged admin mappings for orders and line items."""
+
+from db_access import SQLRepository, fetch_all
 from django.db import models
 from django.utils import timezone
 
 
-class Order(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "pending"
-        CONFIRMED = "confirmed"
-        PREPARING = "preparing"
-        READY = "ready"
-        SERVED = "served"
-        CANCELLED = "cancelled"
+class Order(SQLRepository):
+    table = "orders"
+    key = "order_id"
 
+    @classmethod
+    def with_items(cls, order_id):
+        return fetch_all(
+            """SELECT oi.*, mi.item_name, mi.price
+               FROM order_items AS oi
+               JOIN menu_items AS mi ON mi.menu_item_id = oi.menu_item_id
+               WHERE oi.order_id = %s ORDER BY oi.order_item_id""",
+            (order_id,),
+        )
+
+
+class OrderItem(SQLRepository):
+    table = "order_items"
+    key = "order_item_id"
+
+
+class OrderAdminModel(models.Model):
     order_id = models.AutoField(primary_key=True)
     customer = models.ForeignKey(
-        "seating.Customer", on_delete=models.PROTECT, related_name="orders"
+        "seating.CustomerAdminModel",
+        db_column="customer_id",
+        on_delete=models.PROTECT,
+        related_name="+",
     )
     table = models.ForeignKey(
-        "seating.Table", on_delete=models.PROTECT, related_name="orders"
+        "seating.TableAdminModel",
+        db_column="table_id",
+        on_delete=models.PROTECT,
+        related_name="+",
     )
     staff = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        "accounts.StaffAdminModel",
+        db_column="staff_id",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="orders_taken",
+        related_name="+",
     )
     order_status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.PENDING
+        max_length=20,
+        default="pending",
+        choices=[
+            ("pending", "Pending"),
+            ("confirmed", "Confirmed"),
+            ("preparing", "Preparing"),
+            ("ready", "Ready"),
+            ("served", "Served"),
+            ("cancelled", "Cancelled"),
+        ],
     )
-    order_time = models.DateTimeField(default=timezone.now)
+    order_time = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
+        managed = False
         db_table = "orders"
-        indexes = [
-            models.Index(fields=["order_time"]),
-            models.Index(fields=["order_status"]),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(
-                    order_status__in=[
-                        "pending",
-                        "confirmed",
-                        "preparing",
-                        "ready",
-                        "served",
-                        "cancelled",
-                    ]
-                ),
-                name="order_status_valid",
-            )
-        ]
+        ordering = ("-order_time",)
+        verbose_name = "order"
+        verbose_name_plural = "orders"
+
+    def __str__(self):
+        return f"Order {self.order_id}"
 
 
-class OrderItem(models.Model):
+class OrderItemAdminModel(models.Model):
     order_item_id = models.AutoField(primary_key=True)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    menu_item = models.ForeignKey("menu.MenuItem", on_delete=models.PROTECT)
+    order = models.ForeignKey(
+        OrderAdminModel,
+        db_column="order_id",
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    menu_item = models.ForeignKey(
+        "menu.MenuItemAdminModel",
+        db_column="menu_item_id",
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
     quantity = models.PositiveIntegerField()
     item_subtotal = models.DecimalField(
-        max_digits=10, decimal_places=2, editable=False, default=0
+        max_digits=10, decimal_places=2, default=0, editable=False
     )
-    special_instructions = models.CharField(max_length=255, blank=True, null=True)
-
-    def save(self, *args, **kwargs):
-        # Temporary: the DB trigger should own this once your DB lead's script is in.
-        self.item_subtotal = self.quantity * self.menu_item.price
-        super().save(*args, **kwargs)
+    special_instructions = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
+        managed = False
         db_table = "order_items"
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(quantity__gt=0), name="order_item_qty_positive"
-            )
-        ]
+        ordering = ("order_item_id",)
+        verbose_name = "order item"
+        verbose_name_plural = "order items"
+
+    def __str__(self):
+        return f"Item {self.order_item_id} for order {self.order_id}"
