@@ -68,7 +68,7 @@ The `USE_UNPOOLED_DATABASE_URL=1` prefix makes Django use `DATABASE_URL_UNPOOLED
 
 ## Pre-commit hooks
 
-Install the Git hook once from the repository root:
+`pre-commit` is installed by `requirements-dev.txt`. Installing the Python package does not activate its Git hook. Run this once from the repository root to make Git run the configured hooks before each commit:
 
 ```bash
 pre-commit install
