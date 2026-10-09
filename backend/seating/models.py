@@ -11,7 +11,7 @@ class Table(SQLRepository):
 
     @classmethod
     def available(cls):
-        return fetch_all("SELECT * FROM tables WHERE free_status = 1 ORDER BY table_id")
+        return fetch_all("SELECT * FROM tables WHERE free_status ORDER BY table_id")
 
 
 class Customer(SQLRepository):

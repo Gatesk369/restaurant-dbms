@@ -107,3 +107,53 @@ CREATE TABLE IF NOT EXISTS sales_record (
     total_amount DECIMAL(10, 2) NOT NULL,
     sale_date DATE NOT NULL DEFAULT CURRENT_DATE
 )
+-- django:statement
+CREATE OR REPLACE FUNCTION occupy_table_on_order()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE tables SET free_status = FALSE WHERE table_id = NEW.table_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql
+
+-- django:statement
+DROP TRIGGER IF EXISTS orders_occupy_table_after_insert ON orders
+
+-- django:statement
+CREATE TRIGGER orders_occupy_table_after_insert
+AFTER INSERT ON orders
+FOR EACH ROW
+EXECUTE FUNCTION occupy_table_on_order()
+
+-- django:statement
+CREATE OR REPLACE FUNCTION handle_payment()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_table_id INTEGER;
+BEGIN
+    INSERT INTO sales_record (order_id, payment_id, total_amount, sale_date)
+    VALUES (NEW.order_id, NEW.payment_id, NEW.amount,
+            (NEW.transaction_time AT TIME ZONE 'Africa/Kampala')::date);
+
+    SELECT table_id INTO v_table_id FROM orders WHERE order_id = NEW.order_id;
+
+    -- only free the table if nothing unpaid is left on it
+    UPDATE tables t SET free_status = TRUE
+     WHERE t.table_id = v_table_id
+       AND NOT EXISTS (
+            SELECT 1 FROM orders o
+             WHERE o.table_id = t.table_id
+               AND o.order_status <> 'cancelled'
+               AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.order_id));
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql
+
+-- django:statement
+DROP TRIGGER IF EXISTS payments_after_insert ON payments
+
+-- django:statement
+CREATE TRIGGER payments_after_insert
+AFTER INSERT ON payments
+FOR EACH ROW
+EXECUTE FUNCTION handle_payment()

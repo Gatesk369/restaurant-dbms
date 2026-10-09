@@ -11,7 +11,7 @@ class MenuItem(SQLRepository):
     @classmethod
     def available(cls):
         return fetch_all(
-            "SELECT * FROM menu_items WHERE availability_status = 1 ORDER BY item_name"
+            "SELECT * FROM menu_items WHERE availability_status ORDER BY item_name"
         )
 
 
