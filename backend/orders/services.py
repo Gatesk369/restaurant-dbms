@@ -134,7 +134,7 @@ def cancel_customer_order(customer_id, order_id):
         )
         if row is None:
             raise NotFound("Order not found.")
-        if row["order_status"] != "pending":
-            raise ValidationError({"detail": "Only pending orders can be cancelled."})
+        if row["order_status"] not in ("pending", "confirmed"):
+            raise ValidationError({"detail": "This order can no longer be cancelled."})
         Order.update(order_id, order_status="cancelled")
     return get_customer_order(customer_id, order_id)

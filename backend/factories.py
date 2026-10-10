@@ -1,5 +1,6 @@
 import uuid
 
+from accounts.auth import make_token
 from accounts.models import Staff
 from db_access import fetch_one
 from django.contrib.auth.hashers import make_password
@@ -23,3 +24,7 @@ def make_customer(table_id):
 
 def make_menu_item(name="Tea", price=3000, available=True):
     return MenuItem.create(item_name=name, price=price, availability_status=available)
+
+
+def login_as(client, staff):
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {make_token(staff['staff_id'])}")

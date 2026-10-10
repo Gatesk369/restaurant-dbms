@@ -182,3 +182,110 @@ AFTER UPDATE OF order_status ON orders
 FOR EACH ROW
 WHEN (NEW.order_status = 'cancelled' AND OLD.order_status <> 'cancelled')
 EXECUTE FUNCTION free_table_on_cancel()
+
+-- django:statement
+CREATE UNIQUE INDEX IF NOT EXISTS payments_order_id_key ON payments(order_id)
+
+-- django:statement
+CREATE OR REPLACE FUNCTION pick_free_waiter()
+RETURNS INTEGER AS $$
+DECLARE
+    v_staff INTEGER;
+BEGIN
+    SELECT s.staff_id INTO v_staff
+      FROM staff s
+     WHERE s.role = 'wait_staff' AND s.is_active
+       AND NOT EXISTS (
+            SELECT 1 FROM orders o
+             WHERE o.staff_id = s.staff_id
+               AND o.order_status IN ('confirmed', 'preparing', 'ready'))
+     ORDER BY (SELECT MAX(o2.order_time) FROM orders o2 WHERE o2.staff_id = s.staff_id) NULLS FIRST,
+              s.staff_id
+     LIMIT 1;
+    RETURN v_staff;
+END;
+$$ LANGUAGE plpgsql
+
+-- django:statement
+CREATE OR REPLACE FUNCTION assign_waiter_on_new_order()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_staff INTEGER;
+BEGIN
+    IF NEW.staff_id IS NULL AND NEW.order_status = 'pending' THEN
+        PERFORM pg_advisory_xact_lock(7001);  -- one assignment at a time, so two orders can't grab the same waiter
+        v_staff := pick_free_waiter();
+        IF v_staff IS NOT NULL THEN
+            NEW.staff_id := v_staff;
+            NEW.order_status := 'confirmed';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql
+
+-- django:statement
+DROP TRIGGER IF EXISTS orders_assign_waiter_before_insert ON orders
+
+-- django:statement
+CREATE TRIGGER orders_assign_waiter_before_insert
+BEFORE INSERT ON orders
+FOR EACH ROW
+EXECUTE FUNCTION assign_waiter_on_new_order()
+
+-- django:statement
+CREATE OR REPLACE FUNCTION assign_pending_orders()
+RETURNS VOID AS $$
+DECLARE
+    v_order INTEGER;
+    v_staff INTEGER;
+BEGIN
+    PERFORM pg_advisory_xact_lock(7001);
+    LOOP
+        v_staff := pick_free_waiter();
+        EXIT WHEN v_staff IS NULL;
+
+        SELECT order_id INTO v_order
+          FROM orders
+         WHERE order_status = 'pending' AND staff_id IS NULL
+         ORDER BY order_time, order_id
+         LIMIT 1
+           FOR UPDATE SKIP LOCKED;
+        EXIT WHEN v_order IS NULL;
+
+        UPDATE orders SET staff_id = v_staff, order_status = 'confirmed'
+         WHERE order_id = v_order;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql
+
+-- django:statement
+CREATE OR REPLACE FUNCTION assign_pending_after_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM assign_pending_orders();
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql
+
+-- django:statement
+DROP TRIGGER IF EXISTS orders_assign_pending_after_finish ON orders
+
+-- django:statement
+CREATE TRIGGER orders_assign_pending_after_finish
+AFTER UPDATE OF order_status ON orders
+FOR EACH ROW
+WHEN (NEW.order_status IN ('served', 'cancelled')
+      AND OLD.order_status NOT IN ('served', 'cancelled')
+      AND NEW.staff_id IS NOT NULL)
+EXECUTE FUNCTION assign_pending_after_change()
+
+-- django:statement
+DROP TRIGGER IF EXISTS staff_assign_pending_after_available ON staff
+
+-- django:statement
+CREATE TRIGGER staff_assign_pending_after_available
+AFTER INSERT OR UPDATE OF is_active, role ON staff
+FOR EACH ROW
+WHEN (NEW.is_active AND NEW.role = 'wait_staff')
+EXECUTE FUNCTION assign_pending_after_change()
