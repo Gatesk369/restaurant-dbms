@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlsplit
 
+from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -160,8 +161,13 @@ MAILERS = {
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.auth.StaffAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_THROTTLE_RATES": {"anon": "30/min"},
 }
+
+CORS_ALLOW_HEADERS = (*default_headers, "x-session-token")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
+
+TEST_RUNNER = "config.test_runner.SQLSchemaRunner"

@@ -157,3 +157,28 @@ CREATE TRIGGER payments_after_insert
 AFTER INSERT ON payments
 FOR EACH ROW
 EXECUTE FUNCTION handle_payment()
+
+-- django:statement
+CREATE OR REPLACE FUNCTION free_table_on_cancel()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE tables t SET free_status = TRUE
+     WHERE t.table_id = NEW.table_id
+       AND NOT EXISTS (
+            SELECT 1 FROM orders o
+             WHERE o.table_id = t.table_id
+               AND o.order_status <> 'cancelled'
+               AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.order_id));
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql
+
+-- django:statement
+DROP TRIGGER IF EXISTS orders_free_table_after_cancel ON orders
+
+-- django:statement
+CREATE TRIGGER orders_free_table_after_cancel
+AFTER UPDATE OF order_status ON orders
+FOR EACH ROW
+WHEN (NEW.order_status = 'cancelled' AND OLD.order_status <> 'cancelled')
+EXECUTE FUNCTION free_table_on_cancel()

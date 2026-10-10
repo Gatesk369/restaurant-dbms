@@ -50,4 +50,4 @@ jobs:
         working-directory: backend
         env:
           SECRET_KEY: ci-only-secret-key
-        run: python manage.py test
+        run: python manage.py test --noinput -v 2
