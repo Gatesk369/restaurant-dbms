@@ -2,6 +2,12 @@
 
 Django backend for the restaurant app. Restaurant data is accessed with parameterized raw SQL and stored in Neon PostgreSQL.
 
+## Design Documentation
+
+See [the data dictionary and DBMS design reference](docs/data-dictionary.md)
+for the table attributes, relationships, triggers, API/form mappings, report
+queries, and end-to-end database flow.
+
 ## Requirements
 
 - Python 3.14
