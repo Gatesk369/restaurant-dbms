@@ -172,14 +172,14 @@ erDiagram
     }
     PAYMENTS {
         integer payment_id PK
-        integer order_id FK UK
+      integer order_id FK
         integer cashier_id FK
         decimal amount
     }
     SALES_RECORD {
         integer sales_record_id PK
         integer order_id FK
-        integer payment_id FK UK
+      integer payment_id FK
         decimal total_amount
         date sale_date
     }
