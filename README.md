@@ -89,3 +89,16 @@ python manage.py check
 python manage.py test
 pytest
 ```
+
+## Load demonstration data
+
+Use `seed.sql` only with a dedicated empty development database. It inserts 20 rows into each project table; the schema triggers compute order-item subtotals, create sales records from payments, and release paid tables. Do not run it against the shared Neon branch.
+
+After setting `DATABASE_URL_UNPOOLED` in `.env`, initialize the schema and load the sample data from `backend/`:
+
+```bash
+python manage.py init_sql_schema
+psql "$DATABASE_URL_UNPOOLED" -v ON_ERROR_STOP=1 -f ../seed.sql
+```
+
+All sample staff accounts use the development-only password `DemoPass123!`.
