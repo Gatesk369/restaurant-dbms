@@ -10,19 +10,6 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 
-export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
-];
-
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -45,28 +32,34 @@ export default function App() {
   return <Outlet />;
 }
 
+export function HydrateFallback() {
+  return (
+    <p role="status" className="p-6 text-body text-moss">
+      Loading…
+    </p>
+  );
+}
+
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
+  let message = "Something went wrong";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
+    message = error.status === 404 ? "Page not found" : "Error";
     details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
+      error.status === 404 ? "The requested page could not be found." : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <main className="mx-auto max-w-[1040px] p-6">
+      <h1 className="text-title font-normal">{message}</h1>
+      <p className="mt-1 text-body tracking-body text-moss">{details}</p>
       {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
+        <pre className="mt-4 w-full overflow-x-auto rounded-md border border-tea p-4 text-label">
           <code>{stack}</code>
         </pre>
       )}

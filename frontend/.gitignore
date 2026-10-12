@@ -5,3 +5,11 @@
 # React Router
 /.react-router/
 /build/
+
+# Test output
+/playwright-report/
+/test-results/
+
+# Local environment
+.env.*
+!.env.example

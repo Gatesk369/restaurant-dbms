@@ -1,22 +1,21 @@
-FROM node:24-alpine AS development-dependencies-env
-COPY . /app
+FROM node:24-alpine AS dependencies
 WORKDIR /app
+COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:24-alpine AS production-dependencies-env
-COPY ./package.json package-lock.json /app/
+FROM node:24-alpine AS build
 WORKDIR /app
-RUN npm ci --omit=dev
-
-FROM node:24-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
-WORKDIR /app
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY . .
+# Vite inlines VITE_* at build time, so the API address is a build argument.
+ARG VITE_API_URL=http://127.0.0.1:8000
+ARG VITE_PROTOTYPE_CONTROLS=false
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_PROTOTYPE_CONTROLS=$VITE_PROTOTYPE_CONTROLS
 RUN npm run build
 
-FROM node:24-alpine
-COPY ./package.json package-lock.json /app/
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
-WORKDIR /app
-CMD ["npm", "run", "start"]
+# SPA mode (ssr: false): the build is static files in build/client.
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build/client /usr/share/nginx/html
+EXPOSE 80

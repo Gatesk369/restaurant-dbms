@@ -1,4 +1,12 @@
+.DS_Store
+.env
+.env.*
+!.env.example
 .react-router
 build
 node_modules
+playwright-report
+test-results
+tests/visual/reference
+.agents
 README.md

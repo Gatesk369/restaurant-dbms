@@ -1,7 +1,7 @@
 import type { Config } from "@react-router/dev/config";
 
 export default {
-  // Config options...
-  // Server-side render by default, to enable SPA mode set this to `false`
-  ssr: true,
+  // SPA mode (plan D1): every screen sits behind a browser-held token, so the
+  // build is static files in build/client and all data loads in clientLoaders.
+  ssr: false,
 } satisfies Config;
