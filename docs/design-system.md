@@ -131,7 +131,8 @@ the sign-in aside and form pad `48 32`.
 
 ### Sign-in shell
 
-Full-height `page`, padding `48 16`, content centred. Card: `max-width:1040`,
+Full-height `page`, padding `48 16`, content centred. Card: `max-width:1040`
+(content-box, so 1042px with its border; build it with `box-content`),
 `radius-lg`, `1px tea` border, `overflow:hidden`, flex-wrap. Left aside
 (`flex:1 1 320px`) is `forest` with `page` text, padding `48 32`, brand title
 (Hero) and lede on top and the course line (12/16) at the bottom. Right main

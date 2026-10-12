@@ -25,6 +25,7 @@ described in the root `README.md`.
 | `VITE_API_URL`            | `http://127.0.0.1:8000` | Base URL of the Django API                                                                                                         |
 | `VITE_PROTOTYPE_CONTROLS` | `false`                 | Shows the station's "Prototype only" advance button                                                                                |
 | `VITE_DEMO_PREFILL`       | `false`                 | Lets the sign-in role cards prefill seeded demo usernames (development only)                                                       |
+| `VITE_DEMO_PASSWORD`      | empty                   | Password prefilled with the demo username when `VITE_DEMO_PREFILL=true` (development only)                                         |
 | `VITE_STYLEGUIDE`         | unset                   | `true` adds the `/styleguide` primitives sheet used by the visual tests (the e2e build sets it; never set it for a deployed build) |
 
 `VITE_*` values are inlined at build time.
