@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Unpack a bundled mock-up (.html) into readable markup, scripts and fonts.
 
 The mock-ups in this folder are single-file bundles: the real markup and the
@@ -32,7 +31,7 @@ EXT = {
 
 def block(html: str, kind: str):
     match = re.search(
-        r'<script type="__bundler/%s"[^>]*>(.*?)</script>' % kind, html, re.S
+        rf'<script type="__bundler/{kind}"[^>]*>(.*?)</script>', html, re.DOTALL
     )
     return json.loads(match.group(1)) if match else None
 
