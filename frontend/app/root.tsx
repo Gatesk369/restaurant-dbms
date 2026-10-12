@@ -55,7 +55,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="mx-auto max-w-[1040px] p-6">
+    <main className="mx-auto max-w-signin p-6">
       <h1 className="text-title font-normal">{message}</h1>
       <p className="mt-1 text-body tracking-body text-moss">{details}</p>
       {stack && (

@@ -25,25 +25,25 @@ Contents: [Tokens](#tokens) · [Layout](#layout-and-surfaces) ·
 
 ### Colour
 
-| Token | Hex | Role |
-| --- | --- | --- |
-| `page` | `#f3ede3` | Page background; also the "hole" colour inside the donut and the fill of disabled/occupied tiles |
-| `forest` | `#18442a` | Text, sidebar, station header, toast, "Served" chip, largest chart bar |
-| `moss` | `#45644a` | Primary buttons, selected/pressed states, focus ring, secondary text, bottom line of inputs, dashed borders |
-| `tea` | `#e4dbc4` | Panel borders, secondary (tonal) buttons, table header rows, unselected cards and chips, "Pending" chip |
-| `field` | `#f0e9dd` | Input fill, image placeholder fill |
-| `error` | `#ba1a1a` | Validation errors only. Always paired with an icon and the word "Error:" |
-| `white` | `#ffffff` | Text on moss, forest and error fills only |
+| Token    | Hex       | Role                                                                                                        |
+| -------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `page`   | `#f3ede3` | Page background; also the "hole" colour inside the donut and the fill of disabled/occupied tiles            |
+| `forest` | `#18442a` | Text, sidebar, station header, toast, "Served" chip, largest chart bar                                      |
+| `moss`   | `#45644a` | Primary buttons, selected/pressed states, focus ring, secondary text, bottom line of inputs, dashed borders |
+| `tea`    | `#e4dbc4` | Panel borders, secondary (tonal) buttons, table header rows, unselected cards and chips, "Pending" chip     |
+| `field`  | `#f0e9dd` | Input fill, image placeholder fill                                                                          |
+| `error`  | `#ba1a1a` | Validation errors only. Always paired with an icon and the word "Error:"                                    |
+| `white`  | `#ffffff` | Text on moss, forest and error fills only                                                                   |
 
 Derived values that appear in the markup (add them as tokens, do not inline them):
 
-| Token | Value | Where |
-| --- | --- | --- |
-| `row-hover` | `#e4dbc44d` (tea at 30%) | Hover on order and menu rows |
-| `sage` | `#8aa58f` | Donut slice for MTN Mobile Money |
-| `on-forest-dim` | `#c9d3c5` | Upcoming step label in the station header |
-| `step-outline` | `#a9b8a6` | Upcoming step circle border in the station header |
-| `toast-shadow` | `0 4px 8px #18442a33` | Station toast only. No other element has a shadow |
+| Token           | Value                    | Where                                             |
+| --------------- | ------------------------ | ------------------------------------------------- |
+| `row-hover`     | `#e4dbc44d` (tea at 30%) | Hover on order and menu rows                      |
+| `sage`          | `#8aa58f`                | Donut slice for MTN Mobile Money                  |
+| `on-forest-dim` | `#c9d3c5`                | Upcoming step label in the station header         |
+| `step-outline`  | `#a9b8a6`                | Upcoming step circle border in the station header |
+| `toast-shadow`  | `0 4px 8px #18442a33`    | Station toast only. No other element has a shadow |
 
 Rules: body text is `forest` on `page`; secondary text is `moss`; `white` is
 never used on `page`, `tea` or `field`. Colour never carries meaning alone: every
@@ -55,21 +55,25 @@ Family: **Lato** 400 and 700 (Latin). Fallback stack from the markup:
 `Lato, system-ui, -apple-system, "Segoe UI", sans-serif`. Buttons, inputs, selects
 and textareas inherit the family (`font-family: inherit`).
 
-| Role | Size / line height | Weight | Letter spacing | Used for |
-| --- | --- | --- | --- | --- |
-| Hero | 36 / 44 | 400 | 0 | Sign-in brand title, station "Order from your table" and "Order sent to the kitchen" |
-| Page title | 32 / 40 | 400 | 0 | Staff page `h1`, "Sign in", "Startup menu", "Check your order", Total due, Revenue figure (700 on totals) |
-| Panel title | 24 / 32 | 400 | 0 | "New order", "Active orders", checkout title, "Your order", "Item details" |
-| Wordmark | 22 / 28 | 400 | 0 | "Restaurant DBMS" in sidebar and station header |
-| Figure | 20 / 28 | 700 | 0 | Change due |
-| Section heading | 16 / 24 | 700 | .15px | Panel `h2` ("Table", "Menu items", "Database activity") |
-| Body large | 16 / 24 | 400 | .5px | Sign-in and station lede paragraphs |
-| Input text | 16 / 24 | 400 | .25px | Inputs, selects, textareas |
-| Body | 14 / 20 | 400 | .25px | Paragraphs, cells, descriptions |
-| Body bold | 14 / 20 | 700 | .1px | Buttons, tabs, item names, headers |
-| Label | 12 / 16 | 700 | .5px | Field labels, fieldset legends, chips, toggle chips |
-| Caption | 12 / 16 | 400 | .4px | Helper text, secondary lines, activity log |
-| Micro | 11 / 16 | 400 | .3px | Table tile sub-label ("4 seats") |
+| Role            | Size / line height | Weight | Letter spacing | Used for                                                                                                  |
+| --------------- | ------------------ | ------ | -------------- | --------------------------------------------------------------------------------------------------------- |
+| Hero            | 36 / 44            | 400    | 0              | Sign-in brand title, station "Order from your table" and "Order sent to the kitchen"                      |
+| Page title      | 32 / 40            | 400    | 0              | Staff page `h1`, "Sign in", "Startup menu", "Check your order", Total due, Revenue figure (700 on totals) |
+| Panel title     | 24 / 32            | 400    | 0              | "New order", "Active orders", checkout title, "Your order", "Item details"                                |
+| Wordmark        | 22 / 28            | 400    | 0              | "Restaurant DBMS" in sidebar and station header                                                           |
+| Figure          | 20 / 28            | 700    | 0              | Change due                                                                                                |
+| Section heading | 16 / 24            | 700    | .15px          | Panel `h2` ("Table", "Menu items", "Database activity")                                                   |
+| Body large      | 16 / 24            | 400    | .5px           | Sign-in and station lede paragraphs                                                                       |
+| Input text      | 16 / normal        | 400    | .25px          | Inputs, selects, textareas (the markup sets no line height, so a two-row textarea is about 62px tall)     |
+| Body            | 14 / 20            | 400    | .25px          | Paragraphs, cells, descriptions                                                                           |
+| Body bold       | 14 / 20            | 700    | .1px           | Buttons, tabs, item names, headers                                                                        |
+| Label           | 12 / 16            | 700    | .5px           | Field labels, fieldset legends, chips, toggle chips                                                       |
+| Caption         | 12 / 16            | 400    | .4px           | Helper text, secondary lines, activity log                                                                |
+| Micro           | 11 / 16            | 400    | .3px           | Table tile sub-label ("4 seats")                                                                          |
+
+Buttons, tabs, chips and toggle chips set no line height in the markup either
+(`normal`); build them with `leading-[normal]` so the text centres on the same
+pixel row as the mock-up.
 
 Numbers in money, quantities and table columns use `font-variant-numeric:
 tabular-nums`. Currency is `UGX 18,000` (en-US grouping, no decimals); column
@@ -77,17 +81,17 @@ cells that already sit under a "UGX" header show the bare number (`18,000`).
 
 ### Shape, borders, focus
 
-| Token | Value |
-| --- | --- |
-| `radius-chip` | 4px: chips, toggle chips |
-| `radius-md` | 8px: buttons, inputs, cards, panels, tiles, rows |
-| `radius-lg` | 16px: the sign-in shell |
-| `radius-full` | 50%: step circles, receipt check, donut |
-| Panel border | `1px solid tea`, no fill, no shadow |
-| Divider in totals | `1px solid moss` above the total row |
-| Row divider | `1px solid tea` |
-| Focus ring | `:focus-visible { outline: 2px solid moss; outline-offset: 2px }`; `page` colour inside the sidebar and the station header; radio cards use `:focus-within` |
-| Input underline | `inset 0 -1px 0 moss`; focus `inset 0 -2px 0 moss`; invalid `inset 0 -2px 0 error` |
+| Token             | Value                                                                                                                                                       |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `radius-chip`     | 4px: chips, toggle chips                                                                                                                                    |
+| `radius-md`       | 8px: buttons, inputs, cards, panels, tiles, rows                                                                                                            |
+| `radius-lg`       | 16px: the sign-in shell                                                                                                                                     |
+| `radius-full`     | 50%: step circles, receipt check, donut                                                                                                                     |
+| Panel border      | `1px solid tea`, no fill, no shadow                                                                                                                         |
+| Divider in totals | `1px solid moss` above the total row                                                                                                                        |
+| Row divider       | `1px solid tea`                                                                                                                                             |
+| Focus ring        | `:focus-visible { outline: 2px solid moss; outline-offset: 2px }`; `page` colour inside the sidebar and the station header; radio cards use `:focus-within` |
+| Input underline   | `inset 0 -1px 0 moss`; focus `inset 0 -2px 0 moss`; invalid `inset 0 -2px 0 error`                                                                          |
 
 ### Spacing
 
@@ -150,18 +154,18 @@ mock-up is given where it exists so the markup can be matched side by side.
 
 ### Button (`.btn`)
 
-| Variant | Fill / text | Hover |
-| --- | --- | --- |
-| `primary` | moss / white | forest fill |
-| `tonal` | tea / forest | `filter: brightness(.95)` |
+| Variant   | Fill / text  | Hover                     |
+| --------- | ------------ | ------------------------- |
+| `primary` | moss / white | forest fill               |
+| `tonal`   | tea / forest | `filter: brightness(.95)` |
 
-| Size | Height | Padding | Type |
-| --- | --- | --- | --- |
-| `sm` (compact toggle) | 36 | 0 12 | 12 / 700 / .5px |
-| `md` (staff default) | 44 | 0 16 | 14 / 700 / .1px |
-| `lg` (staff primary action) | 48 | 0 20 | 14 / 700 |
-| `touch` (station default) | 56 | 0 24 | 16 / 700 / .15px |
-| `touch-sm` (station small) | 44 | 0 16 | 14 / 700 |
+| Size                        | Height | Padding | Type             |
+| --------------------------- | ------ | ------- | ---------------- |
+| `sm` (compact toggle)       | 36     | 0 12    | 12 / 700 / .5px  |
+| `md` (staff default)        | 44     | 0 16    | 14 / 700 / .1px  |
+| `lg` (staff primary action) | 48     | 0 20    | 14 / 700         |
+| `touch` (station default)   | 56     | 0 24    | 16 / 700 / .15px |
+| `touch-sm` (station small)  | 44     | 0 16    | 14 / 700         |
 
 Shared: `display:inline-flex; align-items:center; justify-content:center; gap:8;
 border:0; border-radius:8; box-sizing:border-box`. Icons are 18–20px and sit left
@@ -199,12 +203,12 @@ user has tried to submit (`tried` flag), and clear when the field changes.
 
 `inline-flex; min-height:24; padding:0 8; radius 4; 12/700/.5px; gap 4`.
 
-| Meaning | Fill | Text | Border |
-| --- | --- | --- | --- |
-| Neutral count ("5 of 12 tables free", "Sold out", "Pending") | tea | forest | none |
-| Active / quantity (`×2`, "Preparing", "Available") | moss | white | none |
-| Done ("Served") | forest | white | none |
-| Archived | page | moss | `1px solid moss` |
+| Meaning                                                      | Fill   | Text   | Border           |
+| ------------------------------------------------------------ | ------ | ------ | ---------------- |
+| Neutral count ("5 of 12 tables free", "Sold out", "Pending") | tea    | forest | none             |
+| Active / quantity (`×2`, "Preparing", "Available")           | moss   | white  | none             |
+| Done ("Served")                                              | forest | white  | none             |
+| Archived                                                     | page   | moss   | `1px solid moss` |
 
 Every status chip prints its word. Order status mapping lives in the plan.
 
@@ -222,11 +226,11 @@ but full-size `input[type=radio]` (`position:absolute; opacity:0; inset:0;
 width/height:100%`). Unselected tea / forest with moss caption; selected moss /
 white with a 20px check icon at the end. `:focus-within` shows the ring.
 
-| Use | Min height | Padding | Grid |
-| --- | --- | --- | --- |
-| Role picker (sign-in) | 60 | `8 12` | 2 columns, gap 8 |
-| Payment method (checkout) | 64 | `8 16` | 2 columns, gap 8 |
-| Payment choice (station) | 72 | `8 16` | 2 columns, gap 8 |
+| Use                       | Min height | Padding | Grid             |
+| ------------------------- | ---------- | ------- | ---------------- |
+| Role picker (sign-in)     | 60         | `8 12`  | 2 columns, gap 8 |
+| Payment method (checkout) | 64         | `8 16`  | 2 columns, gap 8 |
+| Payment choice (station)  | 72         | `8 16`  | 2 columns, gap 8 |
 
 ### Panel
 
@@ -252,23 +256,23 @@ Tab: flex, gap 12, `min-height:48`, padding `0 12`, radius 8, `page` text,
 `aria-current="page"`. Icons (24px viewBox, 2px stroke, round caps and joins,
 `currentColor`):
 
-| Item | Icon path |
-| --- | --- |
-| Orders | `rect x6 y4 w12 h17 rx2` + `M9 4h6v3H9zM9 12h6M9 16h4` |
-| Payments | `rect x3 y6 w18 h12 rx2` + `circle cx12 cy12 r3` |
-| Menu | `M6 3v7a2 2 0 0 0 2 2v9M10 3v7M6 7h4M17 3c-2 2-3 5-3 8h3v10` |
-| Reports | `M4 20V10M10 20V4M16 20v-8M2 20h20` |
-| Sign out | `M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4` + `M16 17l5-5-5-5M21 12H9` |
-| Locked | `rect x5 y11 w14 h10 rx2` + `M8 11V8a4 4 0 0 1 8 0v3` |
-| Add | `M12 5v14M5 12h14` |
-| Minus | `M5 12h14` |
-| Check | `M5 12l5 5 9-10` |
-| Error | `circle cx12 cy12 r9` + `M12 7v6M12 16.5v.5` |
-| Edit | `M4 20h4L19 9l-4-4L4 16v4z` |
-| Archive | `M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13` |
-| Restore | `M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5` |
-| Search | `circle cx11 cy11 r7` + `M20 20l-4-4` |
-| Call waiter | `M6 17V11a6 6 0 0 1 12 0v6M4 17h16M10 20h4` |
+| Item        | Icon path                                                            |
+| ----------- | -------------------------------------------------------------------- |
+| Orders      | `rect x6 y4 w12 h17 rx2` + `M9 4h6v3H9zM9 12h6M9 16h4`               |
+| Payments    | `rect x3 y6 w18 h12 rx2` + `circle cx12 cy12 r3`                     |
+| Menu        | `M6 3v7a2 2 0 0 0 2 2v9M10 3v7M6 7h4M17 3c-2 2-3 5-3 8h3v10`         |
+| Reports     | `M4 20V10M10 20V4M16 20v-8M2 20h20`                                  |
+| Sign out    | `M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4` + `M16 17l5-5-5-5M21 12H9` |
+| Locked      | `rect x5 y11 w14 h10 rx2` + `M8 11V8a4 4 0 0 1 8 0v3`                |
+| Add         | `M12 5v14M5 12h14`                                                   |
+| Minus       | `M5 12h14`                                                           |
+| Check       | `M5 12l5 5 9-10`                                                     |
+| Error       | `circle cx12 cy12 r9` + `M12 7v6M12 16.5v.5`                         |
+| Edit        | `M4 20h4L19 9l-4-4L4 16v4z`                                          |
+| Archive     | `M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13`                                 |
+| Restore     | `M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5`                                  |
+| Search      | `circle cx11 cy11 r7` + `M20 20l-4-4`                                |
+| Call waiter | `M6 17V11a6 6 0 0 1 12 0v6M4 17h16M10 20h4`                          |
 
 ### StartupTile / LockedTile
 
@@ -283,10 +287,10 @@ not focusable.
 
 Button with two lines (label `T7` / sub `4 seats` or `Occupied` or `In use`).
 
-| Context | Grid | Min height | Label type |
-| --- | --- | --- | --- |
-| Orders screen | 6 columns, gap 8 | 64 | 16/700, sub 11/16 |
-| Station | 4 columns, gap 12 | 96 | 24/700, sub 12/16 |
+| Context       | Grid              | Min height | Label type        |
+| ------------- | ----------------- | ---------- | ----------------- |
+| Orders screen | 6 columns, gap 8  | 64         | 16/700, sub 11/16 |
+| Station       | 4 columns, gap 12 | 96         | 24/700, sub 12/16 |
 
 States: free (tea / forest, `1px solid transparent`), selected (moss / white,
 `aria-pressed=true`), busy (page / moss, `1px dashed moss`, disabled,
@@ -308,15 +312,15 @@ it is how the mock-up is specified). Header row: tea fill, radius 8, padding
 14/20/.25px, `min-height` 44–60. Wrapper `overflow-x:auto` with a `min-width`
 inner table so narrow screens scroll the table, not the page.
 
-| Table | Columns | Inner min-width | Row min-height |
-| --- | --- | --- | --- |
-| Active orders | `96px 64px 1.1fr 2fr 120px 120px 168px` (Order, Table, Customer + waiter caption, Items, Total right, Status, Next step) | 960 | 60 |
-| Order items (checkout) | `minmax(0,1fr) 56px 104px 112px` (Item, Qty, Price, Subtotal; numbers right) | none | 44 |
-| Menu items | `76px minmax(0,1.6fr) 100px 112px 124px 200px` (ID, Item, Category, Price right, Status, Actions) | 860 | 60 |
-| Top items | `168px minmax(60px,1fr) 64px 120px` (Item, bar, Sold, Revenue) | 520 | 48 |
-| Waiter performance | `minmax(0,1.3fr) 64px 116px 116px` | 420 | 48 |
-| Sales by period | `minmax(0,1.3fr) 80px 128px 128px`, plus a bold Total row with no divider | 480 | 48 |
-| Table turnover | `64px 72px minmax(0,1fr) minmax(0,1fr)` | 420 | 44 (padding `6 12`) |
+| Table                  | Columns                                                                                                                  | Inner min-width | Row min-height      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------- | ------------------- |
+| Active orders          | `96px 64px 1.1fr 2fr 120px 120px 168px` (Order, Table, Customer + waiter caption, Items, Total right, Status, Next step) | 960             | 60                  |
+| Order items (checkout) | `minmax(0,1fr) 56px 104px 112px` (Item, Qty, Price, Subtotal; numbers right)                                             | none            | 44                  |
+| Menu items             | `76px minmax(0,1.6fr) 100px 112px 124px 200px` (ID, Item, Category, Price right, Status, Actions)                        | 860             | 60                  |
+| Top items              | `168px minmax(60px,1fr) 64px 120px` (Item, bar, Sold, Revenue)                                                           | 520             | 48                  |
+| Waiter performance     | `minmax(0,1.3fr) 64px 116px 116px`                                                                                       | 420             | 48                  |
+| Sales by period        | `minmax(0,1.3fr) 80px 128px 128px`, plus a bold Total row with no divider                                                | 480             | 48                  |
+| Table turnover         | `64px 72px minmax(0,1fr) minmax(0,1fr)`                                                                                  | 420             | 44 (padding `6 12`) |
 
 All grids use `gap:12; align-items:center`. Row hover is `row-hover`
 (orders and menu only). The row being edited in Menu uses a tea fill.
@@ -353,13 +357,13 @@ way: it is what makes them readable without colour.
 ### Bar chart (revenue by day/week)
 
 - Container `role="img"` with `aria-label="Bar chart of revenue. The figures
-  are in the sales table below."`, `padding-top:24`.
+are in the sales table below."`, `padding-top:24`.
 - Y-axis column 44px wide, plot height 220px. Tick labels right-aligned,
   12/16 moss, positioned at `bottom: <pct>%` with `translateY(50%)`. Labels
   are `0`, then `value / 1,000,000` plus `M` (`0.5M`, `1M`, `1.5M`, `3M`…).
 - Plot: `border-bottom:1px solid moss`; one `1px solid tea` gridline per tick.
 - Bars: flex row, gap 12, padding `0 8`; each bar `width:100%; max-width:56;
-  height: <value/axisMax>%; border-radius:4 4 0 0`; fill moss, the tallest bar
+height: <value/axisMax>%; border-radius:4 4 0 0`; fill moss, the tallest bar
   forest (and the sub-title says so). Value label above each bar: 12/700 forest,
   `X.XXM`. Hover: `filter:brightness(1.25)`. `title` tooltip:
   `Mon 5 Oct: UGX 1,240,000, 40 orders`.
@@ -399,11 +403,11 @@ the bar is decorative.
 `aria-current="step"` on the current one; the visible circle and label are
 `aria-hidden`.
 
-| Step state | Circle fill | Circle border | Content | Label |
-| --- | --- | --- | --- | --- |
-| Done | tea | tea | check icon (3px stroke) | page, 400 |
-| Current | tea | tea | number | page, 700 |
-| Upcoming | transparent | step-outline | number (page) | on-forest-dim, 400 |
+| Step state | Circle fill | Circle border | Content                 | Label              |
+| ---------- | ----------- | ------------- | ----------------------- | ------------------ |
+| Done       | tea         | tea           | check icon (3px stroke) | page, 400          |
+| Current    | tea         | tea           | number                  | page, 700          |
+| Upcoming   | transparent | step-outline  | number (page)           | on-forest-dim, 400 |
 
 Circles are 32px with 2px border. Connectors (between steps) are 48×4 with
 radius 2 and 8px side margins: tea once reached (`i <= current`), moss
@@ -506,22 +510,48 @@ values for anything in the tables above.
 
   --shadow-toast: 0 4px 8px #18442a33;
 
-  --text-hero: 36px;       --text-hero--line-height: 44px;
-  --text-title: 32px;      --text-title--line-height: 40px;
-  --text-panel: 24px;      --text-panel--line-height: 32px;
-  --text-wordmark: 22px;   --text-wordmark--line-height: 28px;
-  --text-figure: 20px;     --text-figure--line-height: 28px;
-  --text-heading: 16px;    --text-heading--line-height: 24px;
-  --text-body: 14px;       --text-body--line-height: 20px;
-  --text-label: 12px;      --text-label--line-height: 16px;
-  --text-micro: 11px;      --text-micro--line-height: 16px;
+  --container-content: 1280px; /* staff content max width: max-w-content */
+  --container-signin: 1040px; /* sign-in shell: max-w-signin */
+
+  --text-hero: 36px;
+  --text-hero--line-height: 44px;
+  --text-title: 32px;
+  --text-title--line-height: 40px;
+  --text-panel: 24px;
+  --text-panel--line-height: 32px;
+  --text-wordmark: 22px;
+  --text-wordmark--line-height: 28px;
+  --text-figure: 20px;
+  --text-figure--line-height: 28px;
+  --text-heading: 16px;
+  --text-heading--line-height: 24px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-label: 12px;
+  --text-label--line-height: 16px;
+  --text-micro: 11px;
+  --text-micro--line-height: 16px;
 }
 
 @layer base {
-  html, body { background: var(--color-page); color: var(--color-forest); }
-  button, input, select, textarea { font-family: inherit; }
-  :focus-visible { outline: 2px solid var(--color-moss); outline-offset: 2px; }
-  .on-forest :focus-visible { outline-color: var(--color-page); }
+  html,
+  body {
+    background: var(--color-page);
+    color: var(--color-forest);
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-moss);
+    outline-offset: 2px;
+  }
+  .on-forest :focus-visible {
+    outline-color: var(--color-page);
+  }
 }
 ```
 
@@ -541,17 +571,17 @@ target.
 
 ## Discrepancies between the design document and the markup
 
-| # | Design document says | Markup does | Build to |
-| --- | --- | --- | --- |
-| 1 | Page headings 24/32 | Page `h1` is 32/40; 24/32 is the panel title | Markup |
-| 2 | Section headings 16/24 bold | Same, plus `.15px` tracking | Markup |
-| 3 | Staff Orders picker "grouped by category" | Single grid filtered by category toggle chips (All, Mains, Snacks, Sides, Drinks) with 12 items | Markup |
-| 4 | Staff app lists 18 items | Menu screen lists 18; the Orders picker has 12 (no Grilled Goat Ribs, Kikomando, Kachumbari, Tea, Fruit Platter, Banana Fritters) | Menu = real data; Orders picker = available, non-archived items from the API |
-| 5 | Sidebar lists "the screens" | Nav labels: Orders, Payments, **Menu**, Reports (tile and `h1` say "Menu management") | Markup |
-| 6 | Reviewers can move through the whole prototype | Sidebar signed-in persona differs per screen (Okello Peter, Nakato Sarah, Tumusiime Ruth) | Show the real signed-in user |
-| 7 | Role gating on the startup menu only | Nav stays open | Keep nav open (fidelity) but render a Locked state on a screen the API refuses; see the plan |
-| 8 | Status "Preparing/Pending/Served" | Chip colours: Pending tea/forest, Preparing moss/white, Served forest/white | Markup |
-| 9 | The Dart theme in the project folder (`app_theme.dart`, Cabin font) | Lato; roles differ | Ignore the Dart file; it is a stale Flutter theme |
+| #   | Design document says                                                | Markup does                                                                                                                       | Build to                                                                                     |
+| --- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1   | Page headings 24/32                                                 | Page `h1` is 32/40; 24/32 is the panel title                                                                                      | Markup                                                                                       |
+| 2   | Section headings 16/24 bold                                         | Same, plus `.15px` tracking                                                                                                       | Markup                                                                                       |
+| 3   | Staff Orders picker "grouped by category"                           | Single grid filtered by category toggle chips (All, Mains, Snacks, Sides, Drinks) with 12 items                                   | Markup                                                                                       |
+| 4   | Staff app lists 18 items                                            | Menu screen lists 18; the Orders picker has 12 (no Grilled Goat Ribs, Kikomando, Kachumbari, Tea, Fruit Platter, Banana Fritters) | Menu = real data; Orders picker = available, non-archived items from the API                 |
+| 5   | Sidebar lists "the screens"                                         | Nav labels: Orders, Payments, **Menu**, Reports (tile and `h1` say "Menu management")                                             | Markup                                                                                       |
+| 6   | Reviewers can move through the whole prototype                      | Sidebar signed-in persona differs per screen (Okello Peter, Nakato Sarah, Tumusiime Ruth)                                         | Show the real signed-in user                                                                 |
+| 7   | Role gating on the startup menu only                                | Nav stays open                                                                                                                    | Keep nav open (fidelity) but render a Locked state on a screen the API refuses; see the plan |
+| 8   | Status "Preparing/Pending/Served"                                   | Chip colours: Pending tea/forest, Preparing moss/white, Served forest/white                                                       | Markup                                                                                       |
+| 9   | The Dart theme in the project folder (`app_theme.dart`, Cabin font) | Lato; roles differ                                                                                                                | Ignore the Dart file; it is a stale Flutter theme                                            |
 
 When a mock-up screen shows something the data model cannot supply yet (seats,
 categories, customer names, mobile network, average stay), the gap and the
