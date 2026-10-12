@@ -8,6 +8,15 @@ See [the data dictionary and DBMS design reference](docs/data-dictionary.md)
 for the table attributes, relationships, triggers, API/form mappings, report
 queries, and end-to-end database flow.
 
+Frontend documentation:
+
+- [Frontend implementation plan](docs/frontend-implementation-plan.md): scope,
+  decisions, backend gaps, per-screen specifications, phases and fidelity checks.
+- [Design system reference](docs/design-system.md): tokens and component values
+  taken from the mock-ups.
+- [`docs/design/`](docs/design/): the UI/UX design document and the clickable
+  mock-ups (staff app and ordering station), plus a script that unpacks them.
+
 ## Requirements
 
 - Python 3.14

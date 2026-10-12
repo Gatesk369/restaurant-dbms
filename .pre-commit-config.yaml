@@ -2,8 +2,11 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # The mock-ups are generated bundles; keep them byte-identical to the originals.
       - id: trailing-whitespace
+        exclude: ^docs/design/.*\.html$
       - id: end-of-file-fixer
+        exclude: ^docs/design/.*\.html$
       - id: check-yaml
       - id: check-added-large-files
 
