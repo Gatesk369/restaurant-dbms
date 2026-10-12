@@ -23,6 +23,20 @@ describe("session storage", () => {
     expect(getStaffSession()).toBeNull();
   });
 
+  it("keeps the display name when the API provides one", () => {
+    const named = {
+      token: "tok",
+      staff: {
+        staff_id: 7,
+        username: "okello.peter",
+        role: "wait_staff" as const,
+        display_name: "Okello Peter",
+      },
+    };
+    setStaffSession(named);
+    expect(getStaffSession()).toEqual(named);
+  });
+
   it("round-trips a customer session independently of staff", () => {
     const customer = { customer_id: 3, table_id: 6, session_token: "uuid" };
     setCustomerSession(customer);

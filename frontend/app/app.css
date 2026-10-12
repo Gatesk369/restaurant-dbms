@@ -27,6 +27,9 @@
 
   --shadow-toast: 0 4px 8px #18442a33;
 
+  --container-content: 1280px;
+  --container-signin: 1040px;
+
   --text-hero: 36px;
   --text-hero--line-height: 44px;
   --text-title: 32px;

@@ -20,11 +20,12 @@ described in the root `README.md`.
 
 ## Environment
 
-| Variable                  | Default                 | Purpose                                                                      |
-| ------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
-| `VITE_API_URL`            | `http://127.0.0.1:8000` | Base URL of the Django API                                                   |
-| `VITE_PROTOTYPE_CONTROLS` | `false`                 | Shows the station's "Prototype only" advance button                          |
-| `VITE_DEMO_PREFILL`       | `false`                 | Lets the sign-in role cards prefill seeded demo usernames (development only) |
+| Variable                  | Default                 | Purpose                                                                                                                            |
+| ------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL`            | `http://127.0.0.1:8000` | Base URL of the Django API                                                                                                         |
+| `VITE_PROTOTYPE_CONTROLS` | `false`                 | Shows the station's "Prototype only" advance button                                                                                |
+| `VITE_DEMO_PREFILL`       | `false`                 | Lets the sign-in role cards prefill seeded demo usernames (development only)                                                       |
+| `VITE_STYLEGUIDE`         | unset                   | `true` adds the `/styleguide` primitives sheet used by the visual tests (the e2e build sets it; never set it for a deployed build) |
 
 `VITE_*` values are inlined at build time.
 
@@ -50,8 +51,13 @@ app/
   root.tsx           document shell, error boundary
   routes.ts          route table
   routes/            route modules
+  components/
+    ui/              primitives: Button, Field/Input, Chip/ToggleChip, RadioCard,
+                     Panel, Toast, QuantityStepper, DataTable, TableTile, ...
+    staff/           Sidebar, PageHeader
   lib/
     api/             fetch client, ApiError, endpoint modules, domain types
+    access.ts        which role may use which screen
     session.ts       staff and customer tokens (sessionStorage)
     money.ts         UGX parsing and formatting
 tests/

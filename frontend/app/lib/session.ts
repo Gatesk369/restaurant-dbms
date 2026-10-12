@@ -55,7 +55,12 @@ export function getStaffSession(): StaffSession | null {
   }
   return {
     token: data.token,
-    staff: { staff_id: staff.staff_id, username: staff.username, role: staff.role },
+    staff: {
+      staff_id: staff.staff_id,
+      username: staff.username,
+      role: staff.role,
+      ...(typeof staff.display_name === "string" ? { display_name: staff.display_name } : {}),
+    },
   };
 }
 

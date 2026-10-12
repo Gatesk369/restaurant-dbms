@@ -26,6 +26,9 @@ async function openStaff(page: Page) {
   // (the sticky sidebar would otherwise be captured mid-scroll).
   await page.setViewportSize({ width: 1400, height: 2300 });
   await page.goto(fileUrl("staff-app-mockups.html"));
+  // The board headings have a fractional height, which puts every artboard
+  // after the first on a half pixel and shifts its capture by 1px. Pin it.
+  await page.addStyleTag({ content: ".board h2 { height: 16px; line-height: 16px; }" });
   for (const { title } of STAFF_SCREENS) {
     const frame = page.frameLocator(`iframe[title="${title}"]`);
     // Each screen renders its heading or form once its bundle has unpacked.
