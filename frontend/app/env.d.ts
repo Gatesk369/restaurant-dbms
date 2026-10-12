@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_PROTOTYPE_CONTROLS?: string;
   /** "true" lets the sign-in role cards prefill demo usernames (dev only). */
   readonly VITE_DEMO_PREFILL?: string;
+  /** Password to prefill with the demo username (development only). */
+  readonly VITE_DEMO_PASSWORD?: string;
 }
 
 interface ImportMeta {

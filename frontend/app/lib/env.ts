@@ -7,3 +7,6 @@ export const apiUrl = (raw || "http://127.0.0.1:8000").replace(/\/+$/, "");
 export const prototypeControls = import.meta.env.VITE_PROTOTYPE_CONTROLS === "true";
 
 export const demoPrefill = import.meta.env.VITE_DEMO_PREFILL === "true";
+
+/** Development only; ignored unless `demoPrefill` is on. */
+export const demoPassword = import.meta.env.VITE_DEMO_PASSWORD ?? "";

@@ -41,3 +41,39 @@ export async function signInAs(page: Page, persona: (typeof PERSONAS)[keyof type
     { token: "e2e-token", staff: persona },
   );
 }
+
+const API = "http://127.0.0.1:8000";
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-headers": "*",
+  "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+};
+
+interface Reply {
+  status?: number;
+  body: unknown;
+}
+
+/**
+ * Answers one API path from the test. Handles the CORS preflight the browser
+ * sends for JSON requests from another origin.
+ */
+export async function mockApi(page: Page, path: string, reply: () => Reply) {
+  await page.route(`${API}${path}`, async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: CORS });
+      return;
+    }
+    const { status = 200, body } = reply();
+    await route.fulfill({
+      status,
+      headers: { ...CORS, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  });
+}
+
+export function loginResponse(persona: (typeof PERSONAS)[keyof typeof PERSONAS]) {
+  return { token: "e2e-token", staff: persona };
+}
