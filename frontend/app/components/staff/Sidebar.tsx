@@ -30,7 +30,8 @@ export function Sidebar({ staff, onSignOut }: SidebarProps) {
     <aside className="on-forest box-border flex-[0_0_240px] bg-forest text-page max-[880px]:basis-full">
       <div
         className={cx(
-          "box-border flex flex-col gap-6 px-3 py-6",
+          // An opaque fill lets the browser keep sub-pixel text AA on the sticky layer.
+          "box-border flex flex-col gap-6 bg-forest px-3 py-6",
           "sticky top-[env(safe-area-inset-top,0px)]",
           "max-[880px]:static max-[880px]:p-4",
         )}

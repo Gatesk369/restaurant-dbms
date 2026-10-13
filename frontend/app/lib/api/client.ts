@@ -52,6 +52,8 @@ export interface RequestOptions {
   query?: Record<string, string | number | boolean | undefined>;
   /** Which credential to attach. Defaults to "staff". */
   auth?: AuthKind;
+  /** With `auth: "customer"`: use this token instead of the stored session. */
+  customerToken?: string;
   signal?: AbortSignal;
 }
 
@@ -96,12 +98,13 @@ function buildUrl(path: string, query: RequestOptions["query"]): string {
   return url.toString();
 }
 
-function authHeaders(kind: AuthKind): Record<string, string> {
+function authHeaders(kind: AuthKind, customerToken?: string): Record<string, string> {
   if (kind === "staff") {
     const session = getStaffSession();
     return session ? { Authorization: `Bearer ${session.token}` } : {};
   }
   if (kind === "customer") {
+    if (customerToken) return { "X-Session-Token": customerToken };
     const session = getCustomerSession();
     return session ? { "X-Session-Token": session.session_token } : {};
   }
@@ -109,10 +112,10 @@ function authHeaders(kind: AuthKind): Record<string, string> {
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, query, auth = "staff", signal } = options;
+  const { method = "GET", body, query, auth = "staff", customerToken, signal } = options;
   const headers: Record<string, string> = {
     Accept: "application/json",
-    ...authHeaders(auth),
+    ...authHeaders(auth, customerToken),
   };
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
@@ -143,7 +146,10 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     const { detail, fields } = parseErrorBody(data);
     // An expired or revoked staff token ends the session everywhere at once.
     if (response.status === 401 && auth === "staff") clearStaffSession();
-    throw new ApiError(response.status, detail ?? GENERIC_MESSAGE, fields);
+    // Without a general message, the first field message is the best summary
+    // (e.g. {"items": "Not available right now: Rolex"}).
+    const summary = detail ?? Object.values(fields)[0] ?? GENERIC_MESSAGE;
+    throw new ApiError(response.status, summary, fields);
   }
 
   return data as T;
