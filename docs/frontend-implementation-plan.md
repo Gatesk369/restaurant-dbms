@@ -508,6 +508,26 @@ status reads Archived; **Restore** is shown but needs G6 to clear the flag and
 is disabled with a caption until then. Description and image URL are not in the
 mock-up editor; adding them is a proposed deviation (OQ2).
 
+**As built (Phase 4)**
+
+- Features switch on from the rows themselves: the screen reads whether the API
+  rows carry `category` and `archived` and behaves accordingly, so nothing
+  changes in the frontend when backend issue #13 lands.
+- Until `archived` exists there is one flag, so a hidden item is shown as
+  **Archived** (Unavailable cannot be told apart), is hidden until "Show
+  archived" is ticked, and Restore sets `availability_status` back to true.
+  Unticking "Available for ordering today" in the editor therefore archives the
+  item for now.
+- Until `category` exists the Category column comes from the name lookup, the
+  select is still sent but ignored by the API, and the form says "Categories
+  are not stored yet, so this choice is not saved."
+- Items are listed in menu id order (the API sorts by name). Search matches
+  the name only. Description and image URL are not on the form (OQ2).
+- Only managers load the screen; other roles get the locked panel without a
+  request.
+- The count in "Show archived (n)" reads "(n)"; the mock-up prints "( n )"
+  because its inline-flex label puts a gap around the number.
+
 **Acceptance:** 18 sample rows render with MI-005 Unavailable and MI-017
 Archived (hidden until "Show archived"); search, category and archived filters
 combine; both validation errors render under the right field with a red 2px

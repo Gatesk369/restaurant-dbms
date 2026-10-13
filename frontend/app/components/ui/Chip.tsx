@@ -25,7 +25,7 @@ export function Chip({ tone = "neutral", className, children, ...rest }: ChipPro
   return (
     <span
       className={cx(
-        "box-border inline-flex min-h-6 items-center gap-1 rounded-chip px-2 text-label leading-[normal] font-bold tracking-label",
+        "box-border inline-flex min-h-6 items-center gap-1 rounded-chip px-2 text-label leading-[inherit] font-bold tracking-label",
         TONES[tone],
         className,
       )}

@@ -5,10 +5,11 @@ import { cx } from "~/lib/cx";
 
 export type ButtonVariant = "primary" | "tonal";
 /**
- * sm: compact toggle (36) · md: staff default (44) · lg: staff primary action
- * (48) · touch: station default (56) · touchSm: station small (44).
+ * sm: compact toggle (36) · md: staff default (44) · row: table row actions
+ * (44, 12px side padding) · lg: staff primary action (48) · touch: station
+ * default (56) · touchSm: station small (44).
  */
-export type ButtonSize = "sm" | "md" | "lg" | "touch" | "touchSm";
+export type ButtonSize = "sm" | "md" | "row" | "lg" | "touch" | "touchSm";
 
 const BASE =
   "box-border inline-flex items-center justify-center gap-2 rounded-md border-0 font-bold leading-[normal] no-underline";
@@ -16,6 +17,7 @@ const BASE =
 const SIZES: Record<ButtonSize, string> = {
   sm: "min-h-9 text-label tracking-label",
   md: "min-h-11 text-body tracking-bold",
+  row: "min-h-11 text-body tracking-bold",
   lg: "min-h-12 text-body tracking-bold",
   touch: "min-h-14 text-heading tracking-heading",
   touchSm: "min-h-11 text-body tracking-bold",
@@ -24,6 +26,7 @@ const SIZES: Record<ButtonSize, string> = {
 const PADDING: Record<ButtonSize, string> = {
   sm: "px-3",
   md: "px-4",
+  row: "px-3",
   lg: "px-5",
   touch: "px-6",
   touchSm: "px-4",
@@ -33,6 +36,7 @@ const PADDING: Record<ButtonSize, string> = {
 const ICON_ONLY: Record<ButtonSize, string> = {
   sm: "min-w-9 px-0",
   md: "min-w-11 px-0",
+  row: "min-w-11 px-0",
   lg: "min-w-12 px-0",
   touch: "min-w-14 px-0",
   touchSm: "min-w-11 px-0",

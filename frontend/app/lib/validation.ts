@@ -41,3 +41,17 @@ export function quickAmounts(total: number): { label: string; value: number }[] 
     { label: "UGX 100,000", value: 100000 },
   ];
 }
+
+export const NAME_ERROR = "Error: enter a name for the item.";
+export const PRICE_ERROR = "Error: price must be a whole number greater than 0.";
+
+/** Item name: not blank (the API also limits it to 100 characters). */
+export function isValidItemName(value: string): boolean {
+  return value.trim() !== "";
+}
+
+/** Whole shillings, greater than zero. The database checks it again. */
+export function isValidPrice(value: string): boolean {
+  const text = value.trim();
+  return /^[0-9]+$/.test(text) && Number.parseInt(text, 10) > 0;
+}

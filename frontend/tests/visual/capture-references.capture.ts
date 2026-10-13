@@ -114,6 +114,39 @@ test("staff app: payments states", async ({ page }) => {
   await shoot(page, "Payments", "staff-payments-receipt");
 });
 
+test("staff app: menu management states", async ({ page }) => {
+  await openStaff(page);
+  const frame = page.frameLocator('iframe[title="Menu management"]');
+  await expect(frame.getByRole("heading", { name: "Item details" })).toBeVisible();
+
+  // Add item: the empty form, then both validation errors.
+  await frame.getByRole("button", { name: "Add item" }).click();
+  await expect(frame.getByRole("heading", { name: "Add item", level: 2 })).toBeVisible();
+  await shoot(page, "Menu management", "staff-menu-add");
+  await frame.getByRole("button", { name: "Save item" }).click();
+  await expect(frame.getByRole("alert")).toHaveCount(2);
+  await shoot(page, "Menu management", "staff-menu-add-errors");
+
+  // Edit an unavailable item (MI-005).
+  await frame.getByRole("button", { name: "Edit Grilled Goat Ribs" }).click();
+  await expect(frame.getByRole("heading", { name: "Edit MI-005" })).toBeVisible();
+  await shoot(page, "Menu management", "staff-menu-edit");
+
+  // Archive an item: toast and the editor closes.
+  await frame.getByRole("button", { name: "Archive Fruit Platter" }).click();
+  await expect(frame.getByRole("status")).toContainText("Fruit Platter archived.");
+  await shoot(page, "Menu management", "staff-menu-archived-toast");
+
+  // Show archived items.
+  await frame.getByRole("checkbox", { name: /Show archived/ }).click();
+  await shoot(page, "Menu management", "staff-menu-show-archived");
+
+  // A category filter with a search that matches nothing.
+  await frame.getByLabel("Search menu items").fill("zzz");
+  await expect(frame.getByText("No items match.")).toBeVisible();
+  await shoot(page, "Menu management", "staff-menu-no-match");
+});
+
 test("ordering station: the four steps", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fileUrl("ordering-station-mockup.html"));
