@@ -44,12 +44,13 @@ export function DataHeader({ children }: { children: ReactNode }) {
   );
 }
 
-/** regular 60 (orders, menu) · compact 48 (reports) · dense 44 (turnover). */
-export type RowDensity = "regular" | "compact" | "dense";
+/** regular 60 (orders, menu) · compact 48 (reports) · snug 44 (checkout lines) · dense 44 with 6px padding (turnover). */
+export type RowDensity = "regular" | "compact" | "snug" | "dense";
 
 const DENSITY: Record<RowDensity, string> = {
   regular: "min-h-15 py-2",
   compact: "min-h-12 py-2",
+  snug: "min-h-11 py-2",
   dense: "min-h-11 py-1.5",
 };
 
@@ -61,6 +62,8 @@ interface DataRowProps {
   hoverable?: boolean;
   /** Bold last row with no divider ("Total"). */
   total?: boolean;
+  /** Tabular figures for the whole row. */
+  tabular?: boolean;
   children: ReactNode;
 }
 
@@ -69,6 +72,7 @@ export function DataRow({
   selected = false,
   hoverable = false,
   total = false,
+  tabular = false,
   children,
 }: DataRowProps) {
   const columns = useContext(ColumnsContext);
@@ -81,6 +85,7 @@ export function DataRow({
         "box-border text-body tracking-body",
         DENSITY[density],
         total ? "font-bold" : "border-b border-tea",
+        tabular && "tabular-nums",
         selected ? "bg-tea" : hoverable && "hover:bg-row-hover",
       )}
     >

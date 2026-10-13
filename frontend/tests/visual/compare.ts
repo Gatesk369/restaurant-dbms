@@ -136,6 +136,9 @@ export async function expectElementMatchesReference(
   options: { maxRatio?: number } = {},
 ) {
   await element.scrollIntoViewIfNeeded();
+  // A hovered control is drawn darker; the references have no pointer.
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(100);
   const box = await element.boundingBox();
   expect(box, "element is not rendered").not.toBeNull();
   expect(

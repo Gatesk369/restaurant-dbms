@@ -448,6 +448,30 @@ unpaid order`), `PAYMENTS: PAY-0388 inserted for ORD-1045 (Cash, UGX 60,000)`.
 The mock-up's `ORDERS: … order_status set to paid` line is **not** produced: the
 backend has no paid status, so the line would be untrue.
 
+**As built (Phase 3)**
+
+- Only cashiers can record payments: the API's pay endpoint is cashier-only
+  (403 for managers), although the design lets a manager open the screen. A
+  manager sees the queue and checkout with the button disabled and the caption
+  "Only cashiers can record payments." Decide whether managers should be able
+  to pay (a backend change) or the screen should be read-only for them.
+- A cashier's queue is what the server returns (served and unpaid), oldest
+  first. A manager's is every served order from today, because no `paid` flag
+  exists yet (gap G10).
+- The header chip reads **Received this session**: a cashier cannot read
+  today's total (gap G12), so it sums payments recorded on this device since
+  sign-in and is cleared on sign-out.
+- Only the method (`Cash` or `Mobile Money`) is sent. The network and phone
+  number are collected and validated for the cashier but not stored (gap G11);
+  the receipt prints the network from this device.
+- The Database activity panel starts empty. Its lines come from the response:
+  `SALES_RECORD` (from the sales record), `TABLES` (confirmed from
+  `GET /api/tables/` when it exists, otherwise worded as conditional) and
+  `PAYMENTS`. The mock-up's `ORDERS ... set to paid` line is not written
+  because the backend has no paid status.
+- The receipt's heading sits inside a `role="status"` region (the mock-up put
+  the role on the heading itself, which removed its heading semantics).
+
 **Acceptance:** four queued orders from the mock-up render with correct totals
 (ORD-1039 UGX 72,000; 1041 UGX 44,000; 1042 UGX 46,000; 1045 UGX 60,000); shortfall error text matches; mobile validation matches;
 receipt replaces checkout and Next order selects the next queued order.

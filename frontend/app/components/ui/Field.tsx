@@ -98,12 +98,16 @@ const CONTROL_SIZES: Record<ControlSize, string> = {
   touch: "min-h-14 px-3 py-3.5",
 };
 
-function useControlProps(props: { id?: string; "aria-invalid"?: AriaAttributes["aria-invalid"] }) {
+function useControlProps(props: {
+  id?: string;
+  "aria-invalid"?: AriaAttributes["aria-invalid"];
+  "aria-describedby"?: string;
+}) {
   const field = useContext(FieldContext);
   return {
     id: props.id ?? field?.id,
     "aria-invalid": props["aria-invalid"] ?? (field?.invalid ? true : undefined),
-    "aria-describedby": field?.describedBy,
+    "aria-describedby": props["aria-describedby"] ?? field?.describedBy,
   };
 }
 
