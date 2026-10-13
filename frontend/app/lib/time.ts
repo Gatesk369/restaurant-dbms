@@ -23,3 +23,8 @@ export function clockTime(date: Date = new Date()): string {
 export function isSameKampalaDay(a: Date | string, b: Date | string): boolean {
   return day.format(new Date(a)) === day.format(new Date(b));
 }
+
+/** Today's date in restaurant time, as YYYY-MM-DD. */
+export function kampalaDate(date: Date = new Date()): string {
+  return day.format(date);
+}

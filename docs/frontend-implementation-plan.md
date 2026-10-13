@@ -559,6 +559,29 @@ All five requests run in parallel in the `clientLoader`; the range toggle is a
 search param (`?range=week|month`) so the view is linkable and the back button
 works.
 
+**As built (Phase 5)**
+
+- The range is read from `?range=week|month` (anything else is this week) and
+  computed from today's date in Africa/Kampala: Monday to Sunday of the
+  current week, or the 28 days ending that Sunday. Days after today come back
+  as zero rows, so the chart always shows seven bars.
+- All five reports are requested together for the same dates. "Last 4 weeks"
+  sums the daily rows into Monday-to-Sunday weeks in the browser; the busiest
+  period, average and totals are derived from those same rows.
+- The chart axis is chosen from the data (steps of 1, 2, 3 or 5 times a power
+  of ten, at most five intervals), which gives the artboard's 2.5M and 12M
+  scales. Bar values print as `1.24M` from 100k up, `45k` below.
+- Payment methods show what the API returns: Cash and Mobile Money today (two
+  slices, forest and sage). A split by network (gap G11, #16) appears by
+  itself when the rows are named per network.
+- The Seats (G2) and Average stay (G13) columns of Table turnover are left out
+  until the rows carry them. Waiters show `username` until display names exist
+  (G9).
+- The subtitle is the date range alone; the mock-up appends "sample figures".
+- Report panels are sized like the mock-up's: `flex-basis` excludes padding and
+  border (`box-content`), so the 2:1 and 3:2 columns split the width the same
+  way.
+
 **Acceptance:** with fixtures equal to the mock-up data, summary figures are
 `UGX 10,820,000 / 345 / UGX 31,362 / Sat 10 Oct` for the week and `UGX
 40,540,000 / 1,321` for four weeks; chart bars, donut and tables match the

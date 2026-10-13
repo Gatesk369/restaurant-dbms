@@ -151,7 +151,8 @@ export interface TableTurnoverRow {
 }
 
 export interface PaymentMethodRow {
-  payment_method: PaymentMethod;
+  /** "Cash", "Mobile Money", or a network name once payments store one (G11). */
+  payment_method: string;
   payments: number;
   revenue: number;
 }
