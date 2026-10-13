@@ -37,13 +37,13 @@ export function tableLabel(table: Pick<Table, "table_id">): string {
 }
 
 /** Tile sub-label: seats when the API provides them (gap G2), else the state. */
-export function tableSub(table: Table): string {
-  if (!table.free_status) return "Occupied";
+export function tableSub(table: Table, busyLabel = "Occupied"): string {
+  if (!table.free_status) return busyLabel;
   return table.seats ? `${table.seats} seats` : "Free";
 }
 
-export function tableAriaLabel(table: Table): string {
-  if (!table.free_status) return `Table ${table.table_id}, occupied`;
+export function tableAriaLabel(table: Table, busyLabel = "occupied"): string {
+  if (!table.free_status) return `Table ${table.table_id}, ${busyLabel}`;
   return table.seats
     ? `Table ${table.table_id}, ${table.seats} seats`
     : `Table ${table.table_id}, free`;
