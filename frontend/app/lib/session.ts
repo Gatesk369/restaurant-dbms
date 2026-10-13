@@ -70,6 +70,33 @@ export function setStaffSession(session: StaffSession): void {
 
 export function clearStaffSession(): void {
   remove(STAFF_KEY);
+  remove(PAYMENTS_KEY);
+}
+
+const PAYMENTS_KEY = "rdbms.payments";
+
+export interface PaymentsTally {
+  count: number;
+  total: number;
+}
+
+/**
+ * Payments recorded on this device since sign-in. Interim for gap G12 (a
+ * cashier cannot read today's total from the API yet); cleared on sign-out.
+ */
+export function getPaymentsTally(): PaymentsTally {
+  const data = read(PAYMENTS_KEY);
+  if (isObject(data) && typeof data.count === "number" && typeof data.total === "number") {
+    return { count: data.count, total: data.total };
+  }
+  return { count: 0, total: 0 };
+}
+
+export function addToPaymentsTally(amount: number): PaymentsTally {
+  const current = getPaymentsTally();
+  const next = { count: current.count + 1, total: current.total + amount };
+  write(PAYMENTS_KEY, next);
+  return next;
 }
 
 export function getCustomerSession(): CustomerSession | null {

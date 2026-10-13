@@ -40,8 +40,13 @@ async function openStaff(page: Page) {
 async function shoot(page: Page, title: string, file: string) {
   const handle = page.locator(`iframe[title="${title}"]`);
   await handle.scrollIntoViewIfNeeded();
-  await handle.screenshot({ path: out(file), animations: "disabled" });
+  // Park the pointer on an inert spot inside the frame (the wordmark area) so
+  // no button is captured in its hover colour; moving it out of the frame does
+  // not clear hover inside the frame reliably.
   const box = await handle.boundingBox();
+  await page.mouse.move(box!.x + 130, box!.y + 38);
+  await page.waitForTimeout(100);
+  await handle.screenshot({ path: out(file), animations: "disabled" });
   const expected = STAFF_SCREENS.find((s) => s.title === title)?.height;
   expect(box?.width).toBe(1360);
   expect(box?.height).toBe(expected);
@@ -79,6 +84,34 @@ test("staff app: startup menu for each role", async ({ page }) => {
   await frame.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(frame.getByRole("alert")).toContainText("Error: enter your username");
   await shoot(page, "Sign in and startup menu", "staff-sign-in-error");
+});
+
+test("staff app: payments states", async ({ page }) => {
+  await openStaff(page);
+  const frame = page.frameLocator('iframe[title="Payments"]');
+  await expect(frame.getByRole("heading", { name: /^ORD-1045/ })).toBeVisible();
+
+  // Cash short of the total (nothing received yet).
+  await frame.getByRole("button", { name: /^Record payment/ }).click();
+  await expect(frame.getByRole("alert")).toContainText("short of the total");
+  await shoot(page, "Payments", "staff-payments-cash-error");
+
+  // Cash with a received amount: change due.
+  await frame.getByLabel("Amount received (UGX)").fill("100000");
+  await shoot(page, "Payments", "staff-payments-cash-change");
+
+  // Mobile money, invalid number.
+  await frame.getByRole("radio", { name: /^Mobile money/ }).check({ force: true });
+  await frame.getByLabel("Customer phone number").fill("0772");
+  await frame.getByRole("button", { name: /^Record payment/ }).click();
+  await expect(frame.getByRole("alert")).toContainText("10-digit number");
+  await shoot(page, "Payments", "staff-payments-momo-error");
+
+  // Recorded: receipt.
+  await frame.getByLabel("Customer phone number").fill("0772123456");
+  await frame.getByRole("button", { name: /^Record payment/ }).click();
+  await expect(frame.getByText("Payment recorded", { exact: true })).toBeVisible();
+  await shoot(page, "Payments", "staff-payments-receipt");
 });
 
 test("ordering station: the four steps", async ({ page }) => {
