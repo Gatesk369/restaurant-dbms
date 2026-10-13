@@ -54,9 +54,13 @@ export function Field({ label, error, hint, hideLabel, className, children }: Fi
           {label}
         </label>
         {children}
-        {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+        {error ? (
+          <FieldError id={errorId} className="mt-1">
+            {error}
+          </FieldError>
+        ) : null}
         {hint ? (
-          <p id={hintId} className="m-0 text-label tracking-caption text-moss">
+          <p id={hintId} className="m-0 mt-1 text-label tracking-caption text-moss">
             {hint}
           </p>
         ) : null}

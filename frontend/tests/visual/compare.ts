@@ -139,21 +139,25 @@ export async function expectElementMatchesReference(
   // A hovered control is drawn darker; the references have no pointer.
   await page.mouse.move(0, 0);
   await page.waitForTimeout(100);
-  const box = await element.boundingBox();
-  expect(box, "element is not rendered").not.toBeNull();
+  // Page coordinates (not viewport), so elements taller than the window work.
+  const box = await element.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height };
+  });
   expect(
-    Math.abs(box!.width - clip.width),
-    `${reference}: element is ${box!.width}px wide, reference is ${clip.width}px`,
+    Math.abs(box.width - clip.width),
+    `${reference}: element is ${box.width}px wide, reference is ${clip.width}px`,
   ).toBeLessThan(1.5);
   expect(
-    Math.abs(box!.height - clip.height),
-    `${reference}: element is ${box!.height}px high, reference is ${clip.height}px`,
+    Math.abs(box.height - clip.height),
+    `${reference}: element is ${box.height}px high, reference is ${clip.height}px`,
   ).toBeLessThan(1.5);
 
   const actual = await page.screenshot({
+    fullPage: true,
     clip: {
-      x: Math.round(box!.x),
-      y: Math.round(box!.y),
+      x: Math.round(box.x),
+      y: Math.round(box.y),
       width: clip.width,
       height: clip.height,
     },

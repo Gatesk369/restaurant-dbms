@@ -34,6 +34,11 @@ export interface FakeOptions {
    * role. Default "all".
    */
   queueView?: "all" | "cashier";
+  /**
+   * Which menu columns the "API" has: `category` (gap G5) and `archived`
+   * (gap G6). Both off by default, like the backend today.
+   */
+  menuFeatures?: { category?: boolean; archived?: boolean };
   /** Fail payments with this status and detail (403, 409, 400). */
   payError?: { status: number; detail: string };
 }
@@ -57,11 +62,20 @@ export class FakeApi {
   /** Orders that have a payment. */
   paid = new Set<number>();
   tables = wireTables();
+  menu: Record<string, unknown>[];
+  nextMenuId = 19;
   private tokens = new Map<string, number>();
   private readonly now = new Date();
 
   constructor(private options: FakeOptions = {}) {
     this.orders = options.orders ?? wireOrders(this.now);
+    const features = options.menuFeatures ?? {};
+    this.menu = menuItems.map((item) => {
+      const row: Record<string, unknown> = { ...wireMenuItem(item) };
+      if (features.category) row.category = item.category;
+      if (features.archived) row.archived = item.archived ?? false;
+      return row;
+    });
   }
 
   set(options: Partial<FakeOptions>) {
@@ -115,8 +129,28 @@ export class FakeApi {
     }
 
     if (path === "/api/staff/menu/" && method === "GET") {
-      const rows = ORDER_PICKER_IDS.map((id) => menuItems[id - 1]).map((i) => wireMenuItem(i));
+      if (url.searchParams.get("include_unavailable") === "1") {
+        return this.json(route, 200, this.menu);
+      }
+      // What staff can order: the mock-up's picker items that are available.
+      const rows = ORDER_PICKER_IDS.map((id) => this.menu.find((r) => r.menu_item_id === id))
+        .filter((r): r is Record<string, unknown> => r !== undefined)
+        .filter((r) => r.availability_status === true);
       return this.json(route, 200, rows);
+    }
+
+    if (path === "/api/staff/menu/" && method === "POST") {
+      return this.createMenuItem(route, body as Record<string, unknown>);
+    }
+
+    const menuRow = path.match(/^\/api\/staff\/menu\/(\d+)\/$/);
+    if (menuRow && (method === "PATCH" || method === "DELETE")) {
+      return this.changeMenuItem(
+        route,
+        Number(menuRow[1]),
+        method,
+        body as Record<string, unknown>,
+      );
     }
 
     if (path === "/api/staff/orders/" && method === "GET") {
@@ -180,6 +214,65 @@ export class FakeApi {
     }
 
     return this.json(route, 404, { detail: `Unhandled ${method} ${path}` });
+  }
+
+  private createMenuItem(route: Route, body: Record<string, unknown>) {
+    const name = String(body.item_name ?? "").trim();
+    const price = Number(body.price);
+    if (!name || name.length > 100) {
+      return this.json(route, 400, { item_name: "Enter a name of 1 to 100 characters." });
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      return this.json(route, 400, { price: "Enter a price greater than 0." });
+    }
+    const features = this.options.menuFeatures ?? {};
+    const row: Record<string, unknown> = {
+      menu_item_id: this.nextMenuId++,
+      item_name: name,
+      description: null,
+      price: price.toFixed(2),
+      availability_status: body.availability_status !== false,
+    };
+    if (features.category) row.category = body.category ?? "Mains";
+    if (features.archived) row.archived = false;
+    this.menu.push(row);
+    return this.json(route, 201, row);
+  }
+
+  private changeMenuItem(
+    route: Route,
+    id: number,
+    method: string,
+    body: Record<string, unknown> | null,
+  ) {
+    const row = this.menu.find((r) => r.menu_item_id === id);
+    if (!row) return this.json(route, 404, { detail: "Menu item not found." });
+    const features = this.options.menuFeatures ?? {};
+
+    if (method === "DELETE") {
+      if (features.archived) row.archived = true;
+      else row.availability_status = false;
+      return this.json(route, 200, row);
+    }
+    const patch = body ?? {};
+    if ("item_name" in patch) {
+      const name = String(patch.item_name).trim();
+      if (!name)
+        return this.json(route, 400, { item_name: "Enter a name of 1 to 100 characters." });
+      row.item_name = name;
+    }
+    if ("price" in patch) {
+      const price = Number(patch.price);
+      if (!Number.isFinite(price) || price <= 0) {
+        return this.json(route, 400, { price: "Enter a price greater than 0." });
+      }
+      row.price = price.toFixed(2);
+    }
+    if ("availability_status" in patch) row.availability_status = patch.availability_status;
+    // Like the real whitelist, unknown columns are ignored rather than rejected.
+    if (features.archived && "archived" in patch) row.archived = patch.archived;
+    if (features.category && "category" in patch) row.category = patch.category;
+    return this.json(route, 200, row);
   }
 
   private pay(route: Route, orderId: number, body: { payment_method: string }) {
