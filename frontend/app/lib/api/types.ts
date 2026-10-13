@@ -89,6 +89,8 @@ export interface Order {
   total: number;
   /** Gap G10. */
   paid?: boolean;
+  /** Gap G4: the backend does not store customer names yet. */
+  customer_name?: string | null;
 }
 
 export interface Table {

@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 import { expectMatchesReference } from "../visual/compare";
-import { PERSONAS, signInAs } from "./helpers";
+import { FakeApi } from "./fake-api";
+import { PERSONAS, fontsReady, signInAs } from "./helpers";
+
+// Orders loads real data now, so the shell tests run against the fake API.
+test.beforeEach(async ({ page }) => {
+  await new FakeApi({ tablesEndpoint: true }).install(page);
+});
 
 test.describe("session guard", () => {
   test("sends a visitor without a session back to sign-in", async ({ page }) => {
@@ -18,7 +24,7 @@ test.describe("staff shell", () => {
     await signInAs(page, PERSONAS.waiter);
     await page.goto("/orders");
 
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").first();
     await expect(sidebar).toHaveCSS("background-color", "rgb(24, 68, 42)");
     await expect(sidebar).toHaveCSS("color", "rgb(243, 237, 227)");
     expect((await sidebar.boundingBox())?.width).toBe(240);
@@ -48,7 +54,7 @@ test.describe("staff shell", () => {
   test("keeps the sidebar sticky and the content at most 1280px wide", async ({ page }) => {
     await signInAs(page, PERSONAS.waiter);
     await page.goto("/orders");
-    await expect(page.locator("aside > div")).toHaveCSS("position", "sticky");
+    await expect(page.locator("aside").first().locator("> div")).toHaveCSS("position", "sticky");
     const content = page.locator("main, aside ~ div > div").first();
     expect((await content.boundingBox())!.width).toBeLessThanOrEqual(1280);
     await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("font-size", "32px");
@@ -99,10 +105,10 @@ test.describe("staff shell below 880px", () => {
     await signInAs(page, PERSONAS.waiter);
     await page.goto("/orders");
 
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").first();
     const box = (await sidebar.boundingBox())!;
     expect(box.width).toBe(800);
-    await expect(page.locator("aside > div")).toHaveCSS("position", "static");
+    await expect(page.locator("aside").first().locator("> div")).toHaveCSS("position", "static");
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCSS("flex-direction", "row");
 
     const content = await page.getByRole("heading", { level: 1 }).boundingBox();
@@ -128,7 +134,7 @@ test.describe("fidelity against the mock-up", () => {
       await signInAs(page, persona);
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await page.evaluate(() => document.fonts.ready);
+      await fontsReady(page);
 
       await expectMatchesReference(page, reference, { x: 0, y: 0, width: 240, height: 420 });
       await expectMatchesReference(page, reference, { x: 240, y: 0, width: subtitle, height: 100 });

@@ -2,6 +2,13 @@ import type { Page } from "@playwright/test";
 
 type Role = "cashier" | "wait_staff" | "kitchen" | "manager";
 
+export interface Persona {
+  staff_id: number;
+  username: string;
+  display_name: string;
+  role: Role;
+}
+
 export const PERSONAS = {
   waiter: {
     staff_id: 1004,
@@ -33,7 +40,7 @@ export const PERSONAS = {
 >;
 
 /** Starts the page signed in, as the app itself would after a successful login. */
-export async function signInAs(page: Page, persona: (typeof PERSONAS)[keyof typeof PERSONAS]) {
+export async function signInAs(page: Page, persona: Persona) {
   await page.addInitScript(
     (session) => {
       sessionStorage.setItem("rdbms.staff", JSON.stringify(session));
@@ -74,6 +81,18 @@ export async function mockApi(page: Page, path: string, reply: () => Reply) {
   });
 }
 
-export function loginResponse(persona: (typeof PERSONAS)[keyof typeof PERSONAS]) {
+export function loginResponse(persona: Persona) {
   return { token: "e2e-token", staff: persona };
+}
+
+/**
+ * Wait until Lato 400 and 700 are loaded. `document.fonts.ready` alone can
+ * resolve before a lazily requested face has started loading, which leaves the
+ * screenshot in the fallback font.
+ */
+export async function fontsReady(page: Page) {
+  await page.evaluate(async () => {
+    await Promise.all([document.fonts.load("400 16px Lato"), document.fonts.load("700 16px Lato")]);
+    await document.fonts.ready;
+  });
 }

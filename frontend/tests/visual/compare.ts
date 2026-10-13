@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -115,6 +115,47 @@ export async function expectMatchesReference(
   options: { maxRatio?: number } = {},
 ) {
   const actual = await page.screenshot({ clip, animations: "disabled" });
+  const result = await compareWithReference(page, actual, reference, clip);
+  expect(
+    result.ratio,
+    `${reference} @ ${clip.x},${clip.y} ${clip.width}x${clip.height}: ${result.differing} of ${result.total} pixels differ, within ${JSON.stringify(result.bounds)}`,
+  ).toBeLessThanOrEqual(options.maxRatio ?? MAX_DIFF_RATIO);
+}
+
+/**
+ * Compares one element of the running app with a rectangle of a reference
+ * capture. The element's own position does not matter (the page may place it
+ * anywhere); its size must match the reference to within a pixel, because flex
+ * layouts leave fractional widths that a screenshot rounds outward.
+ */
+export async function expectElementMatchesReference(
+  page: Page,
+  element: Locator,
+  reference: string,
+  clip: Clip,
+  options: { maxRatio?: number } = {},
+) {
+  await element.scrollIntoViewIfNeeded();
+  const box = await element.boundingBox();
+  expect(box, "element is not rendered").not.toBeNull();
+  expect(
+    Math.abs(box!.width - clip.width),
+    `${reference}: element is ${box!.width}px wide, reference is ${clip.width}px`,
+  ).toBeLessThan(1.5);
+  expect(
+    Math.abs(box!.height - clip.height),
+    `${reference}: element is ${box!.height}px high, reference is ${clip.height}px`,
+  ).toBeLessThan(1.5);
+
+  const actual = await page.screenshot({
+    clip: {
+      x: Math.round(box!.x),
+      y: Math.round(box!.y),
+      width: clip.width,
+      height: clip.height,
+    },
+    animations: "disabled",
+  });
   const result = await compareWithReference(page, actual, reference, clip);
   expect(
     result.ratio,

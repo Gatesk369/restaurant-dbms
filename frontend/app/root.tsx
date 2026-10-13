@@ -8,6 +8,8 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { Button } from "./components/ui/Button";
+import { ApiError } from "./lib/api/client";
 import "./app.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -49,6 +51,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     message = error.status === 404 ? "Page not found" : "Error";
     details =
       error.status === 404 ? "The requested page could not be found." : error.statusText || details;
+  } else if (error instanceof ApiError) {
+    // A failed request: say what the server or network said and let them retry.
+    message = error.isNetwork ? "Can't reach the server" : "Couldn't load this page";
+    details = error.detail;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;
@@ -58,6 +64,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     <main className="mx-auto max-w-signin p-6">
       <h1 className="text-title font-normal">{message}</h1>
       <p className="mt-1 text-body tracking-body text-moss">{details}</p>
+      {error instanceof ApiError ? (
+        <Button className="mt-4" onClick={() => window.location.reload()}>
+          Try again
+        </Button>
+      ) : null}
       {stack && (
         <pre className="mt-4 w-full overflow-x-auto rounded-md border border-tea p-4 text-label">
           <code>{stack}</code>

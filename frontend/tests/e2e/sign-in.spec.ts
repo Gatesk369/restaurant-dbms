@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { expectMatchesReference } from "../visual/compare";
-import { PERSONAS, loginResponse, mockApi } from "./helpers";
+import { FakeApi } from "./fake-api";
+import { PERSONAS, fontsReady, loginResponse, mockApi } from "./helpers";
 
 test.use({ viewport: { width: 1360, height: 780 } });
 
@@ -10,7 +11,7 @@ const ARTBOARD = { x: 0, y: 0, width: 1360, height: 780 };
 async function open(page: Page) {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 2, name: "Sign in" })).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
+  await fontsReady(page);
 }
 
 async function fill(page: Page, username: string, password: string) {
@@ -153,7 +154,7 @@ test.describe("startup menu", () => {
         await expect(tile).toHaveCSS("border-top-style", "dashed");
       }
 
-      await page.evaluate(() => document.fonts.ready);
+      await fontsReady(page);
       await blur(page);
       await expectMatchesReference(page, `staff-startup-${slug}`, ARTBOARD);
     });
@@ -175,6 +176,8 @@ test.describe("startup menu", () => {
   });
 
   test("continues into the staff shell as the signed-in user", async ({ page }) => {
+    // Registered first so the more specific login route below wins.
+    await new FakeApi({ tablesEndpoint: true }).install(page);
     await mockApi(page, "/api/auth/login/", () => ({ body: loginResponse(PERSONAS.waiter) }));
     await open(page);
     await fill(page, "okello.peter", "secret123");
@@ -182,7 +185,7 @@ test.describe("startup menu", () => {
     await page.getByRole("link", { name: /^Orders/ }).click();
 
     await expect(page).toHaveURL(/\/orders$/);
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").first();
     await expect(sidebar.getByText("Okello Peter")).toBeVisible();
     await expect(sidebar.getByText("Wait Staff")).toBeVisible();
     await expect(page.getByRole("heading", { level: 1, name: "Orders" })).toBeVisible();

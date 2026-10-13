@@ -1,5 +1,7 @@
 import { redirect } from "react-router";
 
+import { ApiError } from "./api/client";
+
 import type { StaffSession } from "./api/types";
 import { getStaffSession } from "./session";
 
@@ -19,4 +21,13 @@ export function requireStaffSession(): StaffSession {
   const session = getStaffSession();
   if (!session) throw signInRedirect();
   return session;
+}
+
+/**
+ * For clientLoader catch blocks: an ended session goes back to sign-in with a
+ * reason; every other error is rethrown for the route's error boundary.
+ */
+export function rethrowApiError(error: unknown): never {
+  if (error instanceof ApiError && error.isUnauthorized) throw signInRedirect("expired");
+  throw error;
 }

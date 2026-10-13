@@ -90,6 +90,15 @@ describe("request", () => {
     expect(getStaffSession()?.token).toBe("keep");
   });
 
+  it("summarises field-only errors with their first message", async () => {
+    respond(400, { items: ["Not available right now: Rolex"] });
+    await expect(request("/api/my/orders/", { method: "POST" })).rejects.toMatchObject({
+      status: 400,
+      detail: "Not available right now: Rolex",
+      fields: { items: "Not available right now: Rolex" },
+    });
+  });
+
   it("maps 403, 409 and field errors", async () => {
     respond(403, { detail: "You do not have permission to perform this action." });
     await expect(request("/api/staff/menu/")).rejects.toMatchObject({ isForbidden: true });
