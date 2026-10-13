@@ -615,6 +615,31 @@ Error handling: expired customer session (`401`, "Invalid or expired
 session…") returns to step 1 with the message; unavailable items on send show
 an error panel above the bottom bar and return the cart to the menu.
 
+**As built (Phase 6)**
+
+- `/station` is public and sits outside the staff shell. The 1280 x 800 canvas
+  is scaled uniformly to fit the window (plan D11), so a kiosk of any size
+  shows the same layout.
+- Opening an order calls `POST /api/customers/` once per table and keeps the
+  session for "Change table" and back; a different table gets its own. The
+  session token and the draft (screen, table, cart, notes, choices) live in
+  `sessionStorage`, so a refresh keeps them.
+- The order id and the tracker come from the API: the order is read again every
+  5 s (paused while the tab is hidden) and after a refresh. A cancelled order
+  replaces the tracker with "This order was cancelled. Please speak to a
+  waiter." The prototype button only exists when `VITE_PROTOTYPE_CONTROLS=true`.
+- "Mobile money now" does not collect payment: the choice and phone are
+  validated and echoed on the Done step but only the cart is sent (gap G15,
+  open question OQ3). "Call a waiter" shows its toast only (gap G14).
+- Without `GET /api/tables/` every configured table is offered as free (a
+  customer cannot see which are in use) and tiles say Free instead of seats.
+  Without the public menu returning unavailable items, no "Sold out" card can
+  appear (gap G8).
+- An unreachable or ended session returns to the table step with a message;
+  items that became unavailable show the server's message above the buttons.
+- After five minutes without a touch on the Table or Done step the station
+  forgets the last customer (OQ5 default).
+
 **Acceptance:** each of the four states matches the artboard pixel-for-pixel;
 Grilled Goat Ribs renders sold out once G6/G8 land; touch targets are at
 least 56px (category 64, tables 96); the stepper announces correctly.

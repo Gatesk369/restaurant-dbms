@@ -1,0 +1,422 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import { expectMatchesReference } from "../visual/compare";
+import { FakeApi, type FakeOptions } from "./fake-api";
+import { fontsReady } from "./helpers";
+
+test.use({ viewport: { width: 1280, height: 800 } });
+
+const CANVAS = { x: 0, y: 0, width: 1280, height: 800 };
+
+/** The API as it will be once backend issues #12 and #13 are done. */
+const FULL: FakeOptions = {
+  tablesEndpoint: true,
+  publicMenuSoldOut: true,
+  menuFeatures: { category: true, archived: true },
+};
+
+async function openStation(page: Page, options: FakeOptions = FULL, install = false) {
+  const api = new FakeApi(options);
+  await api.install(page);
+  if (install) await page.clock.install();
+  await page.goto("/station");
+  await expect(page.getByRole("heading", { name: "Order from your table" })).toBeVisible();
+  await fontsReady(page);
+  return api;
+}
+
+const table = (page: Page, n: number, seats = 4) =>
+  page.getByRole("button", { name: `Table ${n}, ${seats} seats` });
+const add = (page: Page, name: string) =>
+  page.getByRole("button", { name: new RegExp(`^Add ${name}`) });
+const start = (page: Page) => page.getByRole("button", { name: "Start order" });
+const send = (page: Page) => page.getByRole("button", { name: /^Send to kitchen/ });
+
+/** Drop focus and the pointer so neither is in a screenshot. */
+async function settle(page: Page) {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(100);
+}
+
+async function toMenu(page: Page, n = 6) {
+  await table(page, n).click();
+  await start(page).click();
+  await expect(page.getByRole("heading", { name: "Mains", level: 2 })).toBeVisible();
+}
+
+async function toReview(page: Page) {
+  await toMenu(page);
+  await add(page, "Matoke & Beef Stew").click();
+  await add(page, "Chicken Luwombo").click();
+  await add(page, "Matoke & Beef Stew").click();
+  await page.getByRole("button", { name: "Review order" }).click();
+  await expect(page.getByRole("heading", { name: "Check your order" })).toBeVisible();
+}
+
+test.describe("fidelity against the mock-up", () => {
+  test("walks the four steps as the mock-up does", async ({ page }) => {
+    await openStation(page);
+    await settle(page);
+    await expectMatchesReference(page, "station-1-table", CANVAS);
+
+    await toMenu(page);
+    await expect(page.getByRole("button", { name: "Grilled Goat Ribs, sold out" })).toBeDisabled();
+    await settle(page);
+    await expectMatchesReference(page, "station-2-menu-empty", CANVAS);
+
+    await add(page, "Matoke & Beef Stew").click();
+    await add(page, "Chicken Luwombo").click();
+    await add(page, "Matoke & Beef Stew").click();
+    await expect(page.getByText("×2")).toBeVisible();
+    await settle(page);
+    await expectMatchesReference(page, "station-2-menu-cart", CANVAS);
+
+    await page.getByRole("button", { name: "Review order" }).click();
+    await expect(page.getByRole("heading", { name: "Check your order" })).toBeVisible();
+    await settle(page);
+    await expectMatchesReference(page, "station-3-review-till", CANVAS);
+
+    await page.getByRole("radio", { name: /^Mobile money now/ }).check({ force: true });
+    await page.getByLabel("Phone number").fill("0772");
+    await send(page).click();
+    await expect(page.getByRole("alert")).toContainText("Error: enter a 10-digit number");
+    await settle(page);
+    await expectMatchesReference(page, "station-3-review-momo-error", CANVAS);
+
+    await page.getByLabel("Phone number").fill("0772123456");
+    await send(page).click();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+    await settle(page);
+    await expectMatchesReference(page, "station-4-done-pending", CANVAS);
+
+    await page.getByRole("button", { name: /Prototype only/ }).click();
+    await settle(page);
+    await expectMatchesReference(page, "station-4-done-preparing", CANVAS);
+  });
+});
+
+test.describe("choosing a table", () => {
+  test("needs a table before the order can start", async ({ page }) => {
+    await openStation(page);
+    await expect(start(page)).toBeDisabled();
+    await expect(page.getByText("Choose a table to continue.")).toBeVisible();
+
+    await table(page, 6).click();
+    await expect(start(page)).toBeEnabled();
+    await expect(page.getByText("Table 6 selected.")).toBeVisible();
+    await expect(table(page, 6)).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("shows tables in use as disabled", async ({ page }) => {
+    await openStation(page);
+    await expect(page.getByRole("button", { name: "Table 2, in use" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Table 9, in use" })).toBeDisabled();
+    await expect(page.getByText("Tables marked In use already have an order open.")).toBeVisible();
+  });
+
+  test("offers every configured table while the API cannot list them", async ({ page }) => {
+    await openStation(page, { publicMenuSoldOut: true });
+    // No seats and no occupancy are known, so tiles say Free.
+    await expect(page.getByRole("button", { name: "Table 2, free" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^Table \d+, free$/ })).toHaveCount(12);
+  });
+
+  test("opens one session for the table and keeps it when changing back", async ({ page }) => {
+    const api = await openStation(page);
+    await toMenu(page);
+    expect(api.callsTo("POST", "/api/customers/")).toHaveLength(1);
+    expect(api.callsTo("POST", "/api/customers/")[0].body).toEqual({ table_id: 6 });
+
+    await page.getByRole("button", { name: "Change table" }).click();
+    await expect(table(page, 6)).toHaveAttribute("aria-pressed", "true");
+    await start(page).click();
+    await expect(page.getByRole("heading", { name: "Mains", level: 2 })).toBeVisible();
+    expect(api.callsTo("POST", "/api/customers/")).toHaveLength(1);
+
+    // A different table needs its own session.
+    await page.getByRole("button", { name: "Change table" }).click();
+    await table(page, 1, 2).click();
+    await start(page).click();
+    await expect(page.getByRole("heading", { name: "Mains", level: 2 })).toBeVisible();
+    expect(api.callsTo("POST", "/api/customers/")).toHaveLength(2);
+  });
+
+  test("reports why a table could not be opened", async ({ page }) => {
+    await openStation(page);
+    await page.route("http://127.0.0.1:8000/api/customers/", (route) => {
+      if (route.request().method() === "OPTIONS") {
+        return route.fulfill({
+          status: 204,
+          headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*" },
+        });
+      }
+      return route.fulfill({
+        status: 400,
+        headers: { "access-control-allow-origin": "*", "content-type": "application/json" },
+        body: JSON.stringify({ table_id: "That table doesn't exist." }),
+      });
+    });
+    await table(page, 6).click();
+    await start(page).click();
+    await expect(page.getByRole("alert")).toHaveText("Error: That table doesn't exist.");
+    await expect(page.getByRole("heading", { name: "Order from your table" })).toBeVisible();
+  });
+});
+
+test.describe("the menu", () => {
+  test("switches categories and marks items already in the cart", async ({ page }) => {
+    await openStation(page);
+    await toMenu(page);
+    const rail = page.getByRole("navigation", { name: "Menu categories" });
+    await expect(rail.getByRole("button")).toHaveText([
+      "Mains",
+      "Snacks",
+      "Sides",
+      "Drinks",
+      "Desserts",
+      "Change table",
+    ]);
+    await expect(rail.getByRole("button", { name: "Mains" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await add(page, "Matoke & Beef Stew").click();
+    await rail.getByRole("button", { name: "Drinks" }).click();
+    await expect(page.getByRole("heading", { name: "Drinks", level: 2 })).toBeVisible();
+    await expect(add(page, "Passion Juice")).toBeVisible();
+    await expect(add(page, "Matoke & Beef Stew")).toHaveCount(0);
+    // The cart survives the category change.
+    await expect(page.getByText("1 × UGX 18,000")).toBeVisible();
+  });
+
+  test("draws a placeholder plate with initials until a photo exists", async ({ page }) => {
+    await openStation(page);
+    await toMenu(page);
+    const src = await add(page, "Fried Tilapia & Chips").locator("img").getAttribute("src");
+    expect(src).toContain("data:image/svg+xml");
+    expect(decodeURIComponent(src!)).toContain(">FT</text>");
+  });
+
+  test("hides unavailable items while the API does not send them", async ({ page }) => {
+    await openStation(page, { tablesEndpoint: true, publicMenuSoldOut: false });
+    await toMenu(page);
+    await expect(page.getByRole("button", { name: /Grilled Goat Ribs/ })).toHaveCount(0);
+  });
+
+  test("steps and removes items; Review stays off until there is one", async ({ page }) => {
+    await openStation(page);
+    await toMenu(page);
+    const review = page.getByRole("button", { name: "Review order" });
+    await expect(review).toBeDisabled();
+    await expect(page.getByText("Nothing yet. Tap a dish or drink to add it.")).toBeVisible();
+    await page.getByRole("button", { name: "Snacks" }).click();
+    await add(page, "Rolex").click();
+    await page.getByRole("button", { name: "Add one Rolex" }).click();
+    await expect(page.getByText("UGX 10,000", { exact: true }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Remove one Rolex" }).click();
+    await page.getByRole("button", { name: "Remove one Rolex" }).click();
+    await expect(review).toBeDisabled();
+  });
+});
+
+test.describe("reviewing and sending", () => {
+  test("explains what the till option means", async ({ page }) => {
+    await openStation(page);
+    await toReview(page);
+    await expect(
+      page.getByText(
+        "Pay the cashier with cash or mobile money when you are ready to leave. Quote your order number.",
+      ),
+    ).toBeVisible();
+    await expect(send(page)).toHaveText("Send to kitchen · UGX 61,000");
+  });
+
+  test("returns to the menu when the last item is removed", async ({ page }) => {
+    await openStation(page);
+    await toMenu(page);
+    await page.getByRole("button", { name: "Sides" }).click();
+    await add(page, "Chapati").click();
+    await page.getByRole("button", { name: "Review order" }).click();
+    await page.getByRole("button", { name: "Remove one Chapati" }).click();
+    await expect(page.getByRole("heading", { name: /^Sides$/, level: 2 })).toBeVisible();
+  });
+
+  test("sends the cart with the table's session and the kitchen note", async ({ page }) => {
+    const api = await openStation(page);
+    await toReview(page);
+    await page.getByLabel("Special instructions for the kitchen").fill("no onions");
+    await send(page).click();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+
+    const call = api.callsTo("POST", "/api/my/orders/")[0];
+    expect(call.sessionToken).toBe("token-5000");
+    expect(call.body).toEqual({
+      items: [
+        { menu_item_id: 1, quantity: 2, special_instructions: "no onions" },
+        { menu_item_id: 2, quantity: 1, special_instructions: "no onions" },
+      ],
+    });
+    // The id is the database's, not a guess.
+    await expect(page.getByText("ORD-1047 · Table 6")).toBeVisible();
+    await expect(page.getByText("Kitchen note: no onions")).toBeVisible();
+    await expect(page.getByText("2 × Matoke & Beef Stew")).toBeVisible();
+  });
+
+  test("keeps the phone number and says where the request went", async ({ page }) => {
+    await openStation(page);
+    await toReview(page);
+    await page.getByRole("radio", { name: /^Mobile money now/ }).check({ force: true });
+    await page.getByLabel("Network").selectOption("Airtel Money");
+    await page.getByLabel("Phone number").fill("0752123456");
+    await send(page).click();
+    await expect(
+      page.getByText(
+        "A payment request for UGX 61,000 was sent to 0752123456 on Airtel Money. Approve it on your phone.",
+      ),
+    ).toBeVisible();
+  });
+
+  test("shows the server's reason when an item is no longer available", async ({ page }) => {
+    await openStation(page, { ...FULL, placeError: "Not available right now: Chicken Luwombo" });
+    await toReview(page);
+    await send(page).click();
+    await expect(page.getByRole("alert")).toHaveText(
+      "Error: Not available right now: Chicken Luwombo",
+    );
+    await expect(page.getByRole("heading", { name: "Check your order" })).toBeVisible();
+    await expect(send(page)).toBeEnabled();
+  });
+
+  test("returns to the table step when the session has ended", async ({ page }) => {
+    await openStation(page);
+    await toReview(page);
+    await page.evaluate(() => sessionStorage.removeItem("rdbms.customer"));
+    await send(page).click();
+    await expect(page.getByRole("heading", { name: "Order from your table" })).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText("Your session has ended");
+  });
+});
+
+test.describe("after sending", () => {
+  test("follows the kitchen: a refresh restores the order and its status", async ({ page }) => {
+    const api = await openStation(page);
+    await toReview(page);
+    await send(page).click();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+    const tracker = page.getByRole("list", { name: "Order status" });
+    await expect(tracker.getByRole("listitem").nth(0)).toHaveAttribute("aria-current", "step");
+
+    api.orders.find((o) => o.order_id === 1047)!.order_status = "preparing";
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+    await expect(tracker.getByRole("listitem").nth(1)).toHaveAttribute("aria-current", "step");
+    await expect(tracker.getByRole("listitem").nth(0)).toContainText("Done");
+    await expect(page.getByText("ORD-1047 · Table 6")).toBeVisible();
+  });
+
+  test("polls the kitchen every few seconds", async ({ page }) => {
+    const api = await openStation(page, FULL, true);
+    await toReview(page);
+    await send(page).click();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+    const tracker = page.getByRole("list", { name: "Order status" });
+
+    api.orders.find((o) => o.order_id === 1047)!.order_status = "served";
+    await page.clock.runFor(6_000);
+    await expect(tracker.getByRole("listitem").nth(2)).toHaveAttribute("aria-current", "step");
+    await expect(tracker.getByRole("listitem").nth(2)).toContainText("Now");
+    await expect(page.getByRole("button", { name: /Prototype only/ })).toBeDisabled();
+  });
+
+  test("says so when the kitchen cancels the order", async ({ page }) => {
+    const api = await openStation(page);
+    await toReview(page);
+    await send(page).click();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+    api.orders.find((o) => o.order_id === 1047)!.order_status = "cancelled";
+    await page.reload();
+    await expect(
+      page.getByText("This order was cancelled. Please speak to a waiter."),
+    ).toBeVisible();
+  });
+
+  test("starts a new order from scratch", async ({ page }) => {
+    await openStation(page);
+    await toReview(page);
+    await send(page).click();
+    await page.getByRole("button", { name: "Start a new order" }).click();
+    await expect(page.getByRole("heading", { name: "Order from your table" })).toBeVisible();
+    await expect(start(page)).toBeDisabled();
+    expect(await page.evaluate(() => sessionStorage.getItem("rdbms.customer"))).toBeNull();
+    // What the station remembers is back to an empty draft.
+    const draft = JSON.parse(
+      (await page.evaluate(() => sessionStorage.getItem("rdbms.station"))) ?? "{}",
+    );
+    expect(draft).toMatchObject({ screen: "start", table: null, lines: [], orderId: null });
+  });
+});
+
+test.describe("the header", () => {
+  test("announces progress to screen readers", async ({ page }) => {
+    await openStation(page);
+    const steps = page.getByRole("list", { name: "Order progress" }).getByRole("listitem");
+    await expect(steps.nth(0)).toHaveAttribute("aria-label", "Step 1 of 4, Table, current");
+    await expect(steps.nth(1)).toHaveAttribute("aria-label", "Step 2 of 4, Menu, upcoming");
+    await toMenu(page);
+    await expect(steps.nth(0)).toHaveAttribute("aria-label", "Step 1 of 4, Table, completed");
+    await expect(steps.nth(1)).toHaveAttribute("aria-label", "Step 2 of 4, Menu, current");
+    await expect(steps.nth(1)).toHaveAttribute("aria-current", "step");
+  });
+
+  test("calls a waiter with a toast that fades after four seconds", async ({ page }) => {
+    await openStation(page, FULL, true);
+    await page.getByRole("button", { name: "Call a waiter" }).click();
+    await expect(page.getByText("A waiter is on the way.")).toBeVisible();
+
+    await page.clock.runFor(3_000);
+    await expect(page.getByText("A waiter is on the way.")).toBeVisible();
+    await page.clock.runFor(1_500);
+    await expect(page.getByText("A waiter is on the way.")).toHaveCount(0);
+
+    await table(page, 6).click();
+    await page.getByRole("button", { name: "Call a waiter" }).click();
+    await expect(page.getByText("A waiter is on the way to Table 6.")).toBeVisible();
+  });
+});
+
+test.describe("the canvas", () => {
+  test("scales to fit a smaller screen and still works", async ({ page }) => {
+    await page.setViewportSize({ width: 640, height: 400 });
+    await openStation(page);
+    const header = await page.locator("header").boundingBox();
+    expect(header!.width).toBeCloseTo(640, 0);
+    expect(header!.height).toBeCloseTo(36, 0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      640,
+    );
+    await table(page, 6).click();
+    await expect(start(page)).toBeEnabled();
+  });
+
+  test("forgets the last customer after five idle minutes", async ({ page }) => {
+    await openStation(page, FULL, true);
+    await page.getByLabel("Your name (optional)").fill("Atim");
+    await table(page, 6).click();
+    await expect(table(page, 6)).toHaveAttribute("aria-pressed", "true");
+
+    await page.clock.runFor(5 * 60_000 + 1_000);
+    await expect(page.getByLabel("Your name (optional)")).toHaveValue("");
+    await expect(start(page)).toBeDisabled();
+  });
+
+  test("keeps the cart across a refresh", async ({ page }) => {
+    await openStation(page);
+    await toMenu(page);
+    await add(page, "Matoke & Beef Stew").click();
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Mains", level: 2 })).toBeVisible();
+    await expect(page.getByText("1 × UGX 18,000")).toBeVisible();
+  });
+});

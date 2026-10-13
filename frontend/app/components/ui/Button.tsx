@@ -20,7 +20,8 @@ const SIZES: Record<ButtonSize, string> = {
   row: "min-h-11 text-body tracking-bold",
   lg: "min-h-12 text-body tracking-bold",
   touch: "min-h-14 text-heading tracking-heading",
-  touchSm: "min-h-11 text-body tracking-bold",
+  // Station small buttons keep the 0.15px spacing of the station button class.
+  touchSm: "min-h-11 text-body tracking-heading",
 };
 
 const PADDING: Record<ButtonSize, string> = {

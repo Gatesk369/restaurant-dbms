@@ -48,6 +48,11 @@ export interface FakeOptions {
    * (gap G6). Both off by default, like the backend today.
    */
   menuFeatures?: { category?: boolean; archived?: boolean };
+  /**
+   * The public menu also lists unavailable items so the station can draw
+   * "Sold out" cards (gap G8 closed). Off by default, like the backend.
+   */
+  publicMenuSoldOut?: boolean;
   /** Which optional report columns the "API" serves (gaps G2, G11, G13). */
   reportFeatures?: ReportFeatures;
   /** Fail payments with this status and detail (403, 409, 400). */
@@ -137,6 +142,27 @@ export class FakeApi {
     if (path === "/api/tables/" && method === "GET") {
       if (!this.options.tablesEndpoint) return this.json(route, 404, { detail: "Not found." });
       return this.json(route, 200, this.tables);
+    }
+
+    if (path === "/api/menu/" && method === "GET") {
+      const rows = this.menu.filter((r) => {
+        if (r.archived === true) return false;
+        return this.options.publicMenuSoldOut ? true : r.availability_status === true;
+      });
+      return this.json(route, 200, rows);
+    }
+
+    const mine = path.match(/^\/api\/my\/orders\/(\d+)\/$/);
+    if (mine && method === "GET") {
+      const token = request.headers()["x-session-token"] ?? "";
+      if (!this.tokens.has(token)) {
+        return this.json(route, 401, {
+          detail: "Invalid or expired session. Enter your table number again.",
+        });
+      }
+      const order = this.orders.find((o) => o.order_id === Number(mine[1]));
+      if (!order) return this.json(route, 404, { detail: "Order not found." });
+      return this.json(route, 200, order);
     }
 
     if (path === "/api/staff/menu/" && method === "GET") {

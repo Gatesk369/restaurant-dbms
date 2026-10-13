@@ -108,3 +108,13 @@ export async function restoreMenuItem(id: number, features: MenuFeatures): Promi
     await request<WireMenuItem>(`/api/staff/menu/${id}/`, { method: "PATCH", body: patch }),
   );
 }
+
+/**
+ * The menu customers see: no sign-in. Today the API returns available items
+ * only, so "Sold out" cards cannot appear (gap G8, issue #13); when it also
+ * returns unavailable items they arrive with `availability_status: false`.
+ */
+export async function listPublicMenu(): Promise<MenuItem[]> {
+  const rows = await request<WireMenuItem[]>("/api/menu/", { auth: "none" });
+  return rows.map(toMenuItem);
+}

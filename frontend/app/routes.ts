@@ -2,6 +2,8 @@ import { type RouteConfig, index, layout, route } from "@react-router/dev/routes
 
 export default [
   index("routes/sign-in.tsx"),
+  // The customer ordering station: no staff session, its own full-screen canvas.
+  route("station", "routes/station.tsx"),
   layout("routes/staff-shell.tsx", [
     route("orders", "routes/orders.tsx"),
     route("payments", "routes/payments.tsx"),

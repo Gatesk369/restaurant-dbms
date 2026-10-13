@@ -165,12 +165,17 @@ test("ordering station: the four steps", async ({ page }) => {
     timeout: 30_000,
   });
   await page.evaluate(() => document.fonts.ready);
-  const shot = (name: string) =>
-    page.screenshot({
+  const shot = async (name: string) => {
+    // Park the pointer so no button is captured in its hover colour (the
+    // click that led here leaves it over the next screen's main button).
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(100);
+    await page.screenshot({
       path: out(name),
       animations: "disabled",
       clip: { x: 0, y: 0, width: 1280, height: 800 },
     });
+  };
 
   await shot("station-1-table");
 
