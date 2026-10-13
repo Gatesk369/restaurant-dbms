@@ -14,6 +14,12 @@ interface PanelProps
   pad?: keyof typeof PAD;
   /** Gap between children: sm 12 (default), md 16 for forms, lg 24 for checkout. */
   gap?: keyof typeof GAP;
+  /**
+   * `content` sizes the panel like the mock-up's report panels, whose
+   * `flex-basis` excludes padding and border (so grow ratios split what is
+   * left after those 34px). Everywhere else panels are `border`.
+   */
+  sizing?: "border" | "content";
   children: ReactNode;
 }
 
@@ -22,6 +28,7 @@ export function Panel({
   as: Tag = "section",
   pad = "md",
   gap = "sm",
+  sizing = "border",
   className,
   children,
   ...rest
@@ -29,7 +36,8 @@ export function Panel({
   return (
     <Tag
       className={cx(
-        "box-border flex flex-col rounded-md border border-tea",
+        sizing === "content" ? "box-content" : "box-border",
+        "flex flex-col rounded-md border border-tea",
         PAD[pad],
         GAP[gap],
         className,

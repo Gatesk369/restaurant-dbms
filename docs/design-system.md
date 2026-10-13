@@ -240,6 +240,12 @@ receipt, all-paid); display:flex; flex-direction:column; gap:12 (16 for forms
 and the new-order ticket, 24 for checkout)`. A panel header is the section
 heading plus an optional Caption line in moss.
 
+Report panels, the chart plot and the legend swatches are **content-box** in
+the mock-up: `flex-basis`, `height` and `width` exclude padding and border.
+Build them with `box-content`, otherwise the 2:1 and 3:2 report columns come
+out 11px and 6px off and the swatches 2px small. Everything else uses
+border-box.
+
 ### Toast / inline status (`role="status"`)
 
 Staff: full-width row, padding `12 16`, radius 8, tea fill, 14/20/700, 20px check

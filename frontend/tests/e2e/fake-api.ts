@@ -1,7 +1,16 @@
 import type { Page, Route } from "@playwright/test";
 
 import { ORDER_PICKER_IDS } from "../fixtures/mockup-data";
-import { menuItems, wireMenuItem, wireOrders, wireTables, type WireOrder } from "../fixtures/wire";
+import {
+  menuItems,
+  reportFor,
+  wireMenuItem,
+  wireOrders,
+  wireReport,
+  wireTables,
+  type ReportFeatures,
+  type WireOrder,
+} from "../fixtures/wire";
 
 const API = "http://127.0.0.1:8000";
 const CORS = {
@@ -39,6 +48,8 @@ export interface FakeOptions {
    * (gap G6). Both off by default, like the backend today.
    */
   menuFeatures?: { category?: boolean; archived?: boolean };
+  /** Which optional report columns the "API" serves (gaps G2, G11, G13). */
+  reportFeatures?: ReportFeatures;
   /** Fail payments with this status and detail (403, 409, 400). */
   payError?: { status: number; detail: string };
 }
@@ -188,6 +199,23 @@ export class FakeApi {
       }
       order.order_status = to as WireOrder["order_status"];
       return this.json(route, 200, order);
+    }
+
+    const report = path.match(/^\/api\/staff\/reports\/([a-z-]+)\/$/);
+    if (report && method === "GET") {
+      if (this.options.expired) {
+        return this.json(route, 401, { detail: "Invalid or expired token." });
+      }
+      const from = url.searchParams.get("from") ?? "";
+      const match = reportFor(from);
+      if (!match) {
+        return this.json(route, 200, { from, to: url.searchParams.get("to"), rows: [] });
+      }
+      return this.json(
+        route,
+        200,
+        wireReport(report[1], match.fixture, match.weekly, this.options.reportFeatures),
+      );
     }
 
     const pay = path.match(/^\/api\/staff\/orders\/(\d+)\/pay\/$/);

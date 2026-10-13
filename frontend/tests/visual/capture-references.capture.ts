@@ -147,6 +147,17 @@ test("staff app: menu management states", async ({ page }) => {
   await shoot(page, "Menu management", "staff-menu-no-match");
 });
 
+test("staff app: reports states", async ({ page }) => {
+  await openStaff(page);
+  const frame = page.frameLocator('iframe[title="Reports"]');
+  await expect(frame.getByRole("heading", { name: "Reports", level: 1 })).toBeVisible();
+
+  // Last 4 weeks.
+  await frame.getByRole("button", { name: "Last 4 weeks" }).click();
+  await expect(frame.getByText("14 September to 11 October 2026")).toBeVisible();
+  await shoot(page, "Reports", "staff-reports-month");
+});
+
 test("ordering station: the four steps", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fileUrl("ordering-station-mockup.html"));
