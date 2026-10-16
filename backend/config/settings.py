@@ -171,3 +171,4 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 TEST_RUNNER = "config.test_runner.SQLSchemaRunner"
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "").strip()

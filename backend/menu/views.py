@@ -1,7 +1,9 @@
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlsplit
 
 from accounts.auth import role_required
 from db_access import fetch_all
+from django.conf import settings
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -18,6 +20,24 @@ class MenuListView(APIView):  # public, for customers
 
     def get(self, request):
         return Response(MenuItem.available())
+
+
+def _clean_image_url(value):
+    """Only accept https URLs from our own Cloudinary account (or empty to clear it)."""
+    if value is None or str(value).strip() == "":
+        return None
+    url = str(value).strip()
+    parts = urlsplit(url)
+    cloud = settings.CLOUDINARY_CLOUD_NAME
+    if (
+        len(url) > 500
+        or parts.scheme != "https"
+        or parts.hostname != "res.cloudinary.com"
+        or not cloud
+        or not parts.path.startswith(f"/{cloud}/")
+    ):
+        raise ValueError
+    return url
 
 
 def _clean(data, partial=False):
@@ -45,6 +65,11 @@ def _clean(data, partial=False):
             out["availability_status"] = data["availability_status"]
         else:
             errors["availability_status"] = "Must be true or false."
+    if "image_url" in data:
+        try:
+            out["image_url"] = _clean_image_url(data["image_url"])
+        except ValueError:
+            errors["image_url"] = "Use the image URL returned by Cloudinary."
     if errors:
         raise ValidationError(errors)
     return out

@@ -1,10 +1,13 @@
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from factories import login_as, make_menu_item, make_staff
 from rest_framework.test import APIClient
 
 from menu.models import MenuItem
+
+CLOUD = "democloud"
+GOOD = f"https://res.cloudinary.com/{CLOUD}/image/upload/v1/restaurant/menu/luwombo.jpg"
 
 
 class StaffMenuTests(TestCase):
@@ -94,3 +97,44 @@ class StaffMenuTests(TestCase):
             ).status_code,
             404,
         )
+
+
+@override_settings(CLOUDINARY_CLOUD_NAME=CLOUD)
+class MenuImageTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.manager = make_staff("m1", role="manager")
+        self.item = make_menu_item("Luwombo", 25000)
+        login_as(self.client, self.manager)
+        self.url = f"/api/staff/menu/{self.item['menu_item_id']}/"
+
+    def test_create_with_image(self):
+        r = self.client.post(
+            "/api/staff/menu/",
+            {"item_name": "Rolex", "price": 5000, "image_url": GOOD},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data["image_url"], GOOD)
+
+    def test_set_and_clear_image(self):
+        r = self.client.patch(self.url, {"image_url": GOOD}, format="json")
+        self.assertEqual(r.data["image_url"], GOOD)
+        r = self.client.patch(self.url, {"image_url": ""}, format="json")
+        self.assertIsNone(r.data["image_url"])
+
+    def test_rejects_urls_that_are_not_from_our_cloudinary(self):
+        for bad in (
+            f"http://res.cloudinary.com/{CLOUD}/x.jpg",
+            "https://evil.example.com/x.jpg",
+            "https://res.cloudinary.com/othercloud/x.jpg",
+            "javascript:alert(1)",
+            f"https://res.cloudinary.com/{CLOUD}/" + "a" * 500,
+        ):
+            r = self.client.patch(self.url, {"image_url": bad}, format="json")
+            self.assertEqual(r.status_code, 400, bad)
+
+    def test_image_appears_on_the_public_menu(self):
+        self.client.patch(self.url, {"image_url": GOOD}, format="json")
+        menu = APIClient().get("/api/menu/").data
+        self.assertEqual(menu[0]["image_url"], GOOD)

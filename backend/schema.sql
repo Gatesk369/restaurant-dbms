@@ -289,3 +289,6 @@ AFTER INSERT OR UPDATE OF is_active, role ON staff
 FOR EACH ROW
 WHEN (NEW.is_active AND NEW.role = 'wait_staff')
 EXECUTE FUNCTION assign_pending_after_change()
+
+-- django:statement
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)
