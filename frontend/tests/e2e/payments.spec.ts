@@ -169,7 +169,7 @@ test.describe("recording a cash payment", () => {
     await expect(page.getByRole("alert")).toHaveCount(0);
   });
 
-  test("records the payment, shows the receipt and updates the log", async ({ page }) => {
+  test("records the payment and shows the receipt without database details", async ({ page }) => {
     const api = await openPayments(page);
     await pickOrder(page, 1045);
     await page.getByLabel("Amount received (UGX)").fill("100000");
@@ -189,14 +189,10 @@ test.describe("recording a cash payment", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].body).toEqual({ payment_method: "Cash" });
 
-    const log = page.locator("section", {
-      has: page.getByRole("heading", { name: "Database activity" }),
-    });
-    await expect(log.getByRole("listitem")).toHaveText([
-      /SALES_RECORD: UGX 60,000 added to today's sales/,
-      /TABLES: Table 7 free_status set to TRUE/,
-      /PAYMENTS: PAY-0388 inserted for ORD-1045 \(Cash, UGX 60,000\)/,
-    ]);
+    await expect(page.getByRole("heading", { name: "Database activity" })).toHaveCount(0);
+    await expect(page.getByText(/SALES_RECORD:|TABLES:|PAYMENTS:|free_status/)).toHaveCount(0);
+    // Payment feedback does not depend on an extra tables fetch for a UI log.
+    expect(api.callsTo("GET", "/api/tables/")).toHaveLength(0);
 
     await expect(page.getByText("3 awaiting payment")).toBeVisible();
     await expect(page.getByText("Received this session UGX 60,000")).toBeVisible();

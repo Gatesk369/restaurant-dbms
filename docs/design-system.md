@@ -62,13 +62,13 @@ and textareas inherit the family (`font-family: inherit`).
 | Panel title     | 24 / 32            | 400    | 0              | "New order", "Active orders", checkout title, "Your order", "Item details"                                |
 | Wordmark        | 22 / 28            | 400    | 0              | "Restaurant DBMS" in sidebar and station header                                                           |
 | Figure          | 20 / 28            | 700    | 0              | Change due                                                                                                |
-| Section heading | 16 / 24            | 700    | .15px          | Panel `h2` ("Table", "Menu items", "Database activity")                                                   |
+| Section heading | 16 / 24            | 700    | .15px          | Panel `h2` ("Table", "Menu items", "Order quantities")                                                    |
 | Body large      | 16 / 24            | 400    | .5px           | Sign-in and station lede paragraphs                                                                       |
 | Input text      | 16 / normal        | 400    | .25px          | Inputs, selects, textareas (the markup sets no line height, so a two-row textarea is about 62px tall)     |
 | Body            | 14 / 20            | 400    | .25px          | Paragraphs, cells, descriptions                                                                           |
 | Body bold       | 14 / 20            | 700    | .1px           | Buttons, tabs, item names, headers                                                                        |
 | Label           | 12 / 16            | 700    | .5px           | Field labels, fieldset legends, chips, toggle chips                                                       |
-| Caption         | 12 / 16            | 400    | .4px           | Helper text, secondary lines, activity log                                                                |
+| Caption         | 12 / 16            | 400    | .4px           | Helper text, secondary lines                                                                              |
 | Micro           | 11 / 16            | 400    | .3px           | Table tile sub-label ("4 seats")                                                                          |
 
 Buttons, tabs, chips and toggle chips set no line height in the markup either
@@ -338,7 +338,11 @@ Panel with padding `16 24`, flex-wrap, gap `16 48`. Each stat: caption (12/700/.
 moss) over a 24/32 bold tabular figure. Order: Revenue, Orders, Average order,
 Busiest day / Busiest week.
 
-### Database activity panel
+### Database activity panel (historical mock-up)
+
+Removed from Orders, Payments, and the primitives sheet in issue #39. The
+following visual specification is retained only as historical documentation;
+there is no activity-log component in the current app.
 
 Panel with section heading, Caption, then a `ul` (gap 8) of rows: time
 (`HH:MM`, 12/700, moss, tabular, fixed) and text (12/16). Newest first, six rows

@@ -6,7 +6,6 @@ import { CheckoutPanel } from "~/components/staff/CheckoutPanel";
 import { PageHeader } from "~/components/staff/PageHeader";
 import { PaymentQueue } from "~/components/staff/PaymentQueue";
 import { ReceiptPanel, type Receipt } from "~/components/staff/ReceiptPanel";
-import { ActivityLog, type ActivityEntry } from "~/components/ui/ActivityLog";
 import { ButtonLink } from "~/components/ui/Button";
 import { Chip } from "~/components/ui/Chip";
 import { Panel } from "~/components/ui/Panel";
@@ -15,10 +14,8 @@ import { staffName } from "~/lib/api/auth";
 import { ApiError } from "~/lib/api/client";
 import { listStaffOrders } from "~/lib/api/orders";
 import { payOrder } from "~/lib/api/payments";
-import { fetchTables } from "~/lib/api/tables";
 import { ROLE_LABELS } from "~/lib/api/types";
 import { requireStaffSession, rethrowApiError } from "~/lib/auth-guard";
-import { pushEntries } from "~/lib/domain/activity-log";
 import {
   MOBILE_NETWORKS,
   apiMethod,
@@ -32,7 +29,6 @@ import {
 import { formatUgx } from "~/lib/money";
 import { usePoll } from "~/lib/hooks/use-poll";
 import { addToPaymentsTally, getPaymentsTally } from "~/lib/session";
-import { clockTime } from "~/lib/time";
 import {
   cashShortfall,
   changeDue,
@@ -87,7 +83,6 @@ export default function Payments() {
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [paidIds, setPaidIds] = useState<ReadonlySet<number>>(new Set());
-  const [log, setLog] = useState<ActivityEntry[]>([]);
   const [tally, setTally] = useState(getPaymentsTally);
 
   usePoll(() => {
@@ -138,34 +133,10 @@ export default function Payments() {
     try {
       // The network and phone are collected for the cashier but the API only
       // stores the method (gap G11, issue #16), so only the method is sent.
-      const { payment, sales_record } = await payOrder(selected.order_id, apiMethod(method));
-      const time = clockTime();
+      const { payment } = await payOrder(selected.order_id, apiMethod(method));
       const number = paymentNumber(payment.payment_id);
       const label = receiptMethod(method, network);
 
-      // Did the table come free? Only the tables endpoint can say (gap G1).
-      const tables = await fetchTables().catch(() => null);
-      const table = tables?.find((t) => t.table_id === selected.table_id);
-      const tableLine =
-        table === undefined
-          ? `TABLES: Table ${selected.table_id} free_status set to TRUE unless another order there is unpaid`
-          : table.free_status
-            ? `TABLES: Table ${selected.table_id} free_status set to TRUE`
-            : `TABLES: Table ${selected.table_id} still has an unpaid order`;
-
-      setLog((entries) =>
-        pushEntries(entries, [
-          {
-            time,
-            text: `SALES_RECORD: ${formatUgx(sales_record?.total_amount ?? payment.amount)} added to today's sales`,
-          },
-          { time, text: tableLine },
-          {
-            time,
-            text: `PAYMENTS: ${number} inserted for ORD-${selected.order_id} (${label}, ${formatUgx(payment.amount)})`,
-          },
-        ]),
-      );
       setReceipt({
         paymentNumber: number,
         orderNumber: `ORD-${selected.order_id}`,
@@ -208,11 +179,6 @@ export default function Payments() {
             orders={queue}
             selectedId={receipt ? null : (selected?.order_id ?? null)}
             onSelect={select}
-          />
-          <ActivityLog
-            description="What changes in the tables when a payment is recorded."
-            entries={log}
-            empty="No activity yet. Record a payment to see the triggers fire."
           />
         </aside>
 

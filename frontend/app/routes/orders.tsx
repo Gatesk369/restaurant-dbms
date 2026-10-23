@@ -7,7 +7,6 @@ import { MenuPicker } from "~/components/staff/MenuPicker";
 import { OrderTicket, type TicketLine } from "~/components/staff/OrderTicket";
 import { PageHeader } from "~/components/staff/PageHeader";
 import { TablePanel } from "~/components/staff/TablePanel";
-import { ActivityLog, type ActivityEntry } from "~/components/ui/ActivityLog";
 import { Chip } from "~/components/ui/Chip";
 import { FieldError } from "~/components/ui/Field";
 import { StatusMessage } from "~/components/ui/Toast";
@@ -26,13 +25,12 @@ import {
 } from "~/lib/api/types";
 import { requireStaffSession, rethrowApiError } from "~/lib/auth-guard";
 import { addToCart, cartTotal, changeQuantity, type CartLine } from "~/lib/domain/cart";
-import { orderPlacedEntries, pushEntries, statusChangedEntry } from "~/lib/domain/activity-log";
 import { categoriesPresent, categoryOf } from "~/lib/domain/menu-categories";
-import { isActive, type Filter } from "~/lib/domain/order-status";
+import { isActive, statusLabel, type Filter } from "~/lib/domain/order-status";
 import { deriveTables, parseTableIds } from "~/lib/domain/tables";
 import { tableIdsSpec } from "~/lib/env";
 import { usePoll } from "~/lib/hooks/use-poll";
-import { clockTime, isSameKampalaDay } from "~/lib/time";
+import { isSameKampalaDay } from "~/lib/time";
 
 export const handle = { screen: "orders" } as const;
 
@@ -87,7 +85,6 @@ export default function Orders() {
   const [notes, setNotes] = useState("");
   const [customer, setCustomer] = useState(CUSTOMERS[0].value);
   const [toast, setToast] = useState("");
-  const [log, setLog] = useState<ActivityEntry[]>([]);
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [busyOrderId, setBusyOrderId] = useState<number | null>(null);
@@ -173,7 +170,6 @@ export default function Orders() {
           ...(note ? { special_instructions: note } : {}),
         })),
       );
-      setLog((entries) => pushEntries(entries, orderPlacedEntries(placed, clockTime())));
       setToast(
         `Order ORD-${placed.order_id} placed for Table ${placed.table_id}. The kitchen can see it as pending.`,
       );
@@ -193,12 +189,10 @@ export default function Orders() {
   async function advance(order: Order, to: OrderStatus) {
     setBusyOrderId(order.order_id);
     setBoardError(null);
+    setToast("");
     try {
-      await changeOrderStatus(order.order_id, to);
-      setToast("");
-      setLog((entries) =>
-        pushEntries(entries, [statusChangedEntry(order.order_id, to, clockTime())]),
-      );
+      const updated = await changeOrderStatus(order.order_id, to);
+      setToast(`Order ORD-${updated.order_id} is now ${statusLabel(updated.order_status)}.`);
     } catch (error) {
       setBoardError(messageOf(error));
     } finally {
@@ -255,11 +249,6 @@ export default function Orders() {
               placing={placing}
               error={placeError}
               onPlace={() => void place()}
-            />
-            <ActivityLog
-              description="Triggers that run when an order is placed or changes status."
-              entries={log}
-              empty="No activity yet. Place an order or move one along."
             />
           </aside>
         </div>

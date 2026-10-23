@@ -78,3 +78,14 @@ tests/
 - Tokens live in `sessionStorage`; never log them.
 - Where the API cannot yet supply what a mock-up shows, follow the interim
   rendering in section 4.2 of the plan and mark the shim with the gap number.
+
+## Staff task feedback
+
+Orders show submission confirmations and status-change messages. Payments show
+receipts, queue updates, and the session total. Both keep actionable errors.
+Database activity panels and their frontend-generated SQL descriptions were
+removed in #39; no operational screen queries or synthesizes an audit stream.
+
+Educational trigger explanations remain in the [data dictionary](../docs/data-dictionary.md)
+and [historical design notes](../docs/design/ui-ux-design-document.md#database-activity-historical-mock-up).
+Backend triggers, payment transactions, and actual audit logging are unaffected.

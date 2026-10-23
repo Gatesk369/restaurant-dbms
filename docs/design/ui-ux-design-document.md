@@ -152,7 +152,13 @@ The two prototypes reuse the same patterns so staff and customers meet familiar 
 - **Totals are computed, never typed.** Item subtotals, order totals, change due and report sums are calculated from the same sample data, so every screen agrees.
 - **Tables of records are ARIA tables.** Lists such as orders, sales and menu items are built as grids with table roles so they stay readable by assistive technology.
 
-### Database activity
+### Database activity (historical mock-up)
+
+Issue #39 removes these panels from operational Orders and Payments screens.
+The examples below explain expected database behavior for the project; the
+former frontend-generated lines were not an independently queried audit log.
+Staff receive order/status confirmations, payment receipts, and errors instead.
+Database triggers, transactions, and actual audit logging are unchanged.
 
 The staff app makes the database visible. A "Database activity" panel on Orders and Payments logs the trigger effects of each action as it happens.
 

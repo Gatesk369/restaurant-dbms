@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import type { Order, OrderStatus } from "~/lib/api/types";
-import { orderPlacedEntries, pushEntries, statusChangedEntry } from "~/lib/domain/activity-log";
 import { addToCart, cartTotal, changeQuantity, quantityOf } from "~/lib/domain/cart";
 import { categoriesPresent, categoryOf } from "~/lib/domain/menu-categories";
 import { filterOf, isActive, nextAction, statusLabel, statusTone } from "~/lib/domain/order-status";
@@ -12,7 +11,7 @@ import {
   tableLabel,
   tableSub,
 } from "~/lib/domain/tables";
-import { clockTime, isSameKampalaDay } from "~/lib/time";
+import { isSameKampalaDay } from "~/lib/time";
 
 function order(status: OrderStatus, extra: Partial<Order> = {}): Order {
   return {
@@ -237,45 +236,7 @@ describe("menu categories (interim lookup)", () => {
   });
 });
 
-describe("activity log", () => {
-  it("describes the trigger effects of an order, singular and plural", () => {
-    const one = orderPlacedEntries(
-      order("pending", { order_id: 1047, table_id: 6, items: [{} as never] }),
-      "12:41",
-    );
-    expect(one.map((e) => e.text)).toEqual([
-      "ORDER_ITEMS: 1 row inserted, item_subtotal = quantity × price",
-      "TABLES: Table 6 free_status set to FALSE",
-      "ORDERS: ORD-1047 inserted with status pending",
-    ]);
-    const many = orderPlacedEntries(
-      order("pending", { items: [{} as never, {} as never] }),
-      "12:41",
-    );
-    expect(many[0].text).toContain("2 rows inserted");
-  });
-
-  it("records a status change", () => {
-    expect(statusChangedEntry(1044, "preparing", "12:42")).toEqual({
-      time: "12:42",
-      text: "ORDERS: ORD-1044 order_status set to preparing",
-    });
-  });
-
-  it("keeps the six newest lines, newest first", () => {
-    let log: { time: string; text: string }[] = [];
-    for (let i = 1; i <= 8; i++) log = pushEntries(log, [{ time: "12:00", text: `line ${i}` }]);
-    expect(log).toHaveLength(6);
-    expect(log[0].text).toBe("line 8");
-    expect(log[5].text).toBe("line 3");
-  });
-});
-
 describe("restaurant time", () => {
-  it("formats in Kampala time", () => {
-    expect(clockTime(new Date("2026-10-11T09:41:00Z"))).toBe("12:41");
-  });
-
   it("compares days in Kampala time, not UTC", () => {
     // 22:00 UTC is 01:00 the next day in Kampala.
     expect(isSameKampalaDay("2026-10-10T22:00:00Z", "2026-10-11T08:00:00Z")).toBe(true);
