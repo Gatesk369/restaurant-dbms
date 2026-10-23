@@ -60,6 +60,11 @@ described in the root `README.md`.
 
 Playwright needs a browser once: `npx playwright install chromium`.
 
+Visual tests keep the original mock-up captures in `tests/visual/reference`.
+Approved workflow changes (such as the Orders copy in #35) use separate
+Playwright baselines under `tests/e2e/*-snapshots`; review those images when
+updating them rather than relaxing the mock-up comparison tolerance.
+
 ## Layout
 
 ```

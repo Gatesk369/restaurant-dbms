@@ -137,7 +137,23 @@ test.describe("fidelity against the mock-up", () => {
       await fontsReady(page);
 
       await expectMatchesReference(page, reference, { x: 0, y: 0, width: 240, height: 420 });
-      await expectMatchesReference(page, reference, { x: 240, y: 0, width: subtitle, height: 100 });
+      if (path === "/orders") {
+        const header = page.getByRole("heading", { level: 1, name: "Orders" }).locator("..");
+        await expect(header).toContainText(
+          "Deliver your assigned orders, mark them served, and bring payment options to the table.",
+        );
+        // The customer-only workflow replaces the old staff order-entry subtitle.
+        await expect(header).toHaveScreenshot("assigned-orders-header.png", {
+          animations: "disabled",
+        });
+      } else {
+        await expectMatchesReference(page, reference, {
+          x: 240,
+          y: 0,
+          width: subtitle,
+          height: 100,
+        });
+      }
     });
   }
 });
