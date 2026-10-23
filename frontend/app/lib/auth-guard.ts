@@ -1,5 +1,6 @@
 import { redirect } from "react-router";
 
+import { canAccess, screensForRole, type ScreenKey } from "./access";
 import { ApiError } from "./api/client";
 
 import type { StaffSession } from "./api/types";
@@ -20,6 +21,17 @@ export function signInRedirect(reason?: SignInReason): Response {
 export function requireStaffSession(): StaffSession {
   const session = getStaffSession();
   if (!session) throw signInRedirect();
+  return session;
+}
+
+/** Check before loading protected screen data, including direct URL visits. */
+export function requireStaffScreen(screen: ScreenKey): StaffSession {
+  const session = requireStaffSession();
+  if (!canAccess(session.staff.role, screen)) {
+    const destination = screensForRole(session.staff.role)[0];
+    if (!destination) throw new Response("Access denied", { status: 403 });
+    throw redirect(destination.path);
+  }
   return session;
 }
 

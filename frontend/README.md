@@ -6,6 +6,19 @@ It talks to the Django API in `../backend` and is built to match the mock-ups in
 [`../docs/frontend-implementation-plan.md`](../docs/frontend-implementation-plan.md)
 and [`../docs/design-system.md`](../docs/design-system.md).
 
+## Role-based navigation
+
+Navigation, startup tiles, and report links use the authenticated staff role.
+Cashiers see Orders and Payments; wait staff and kitchen staff see Orders;
+managers see Orders, Payments, Menu management, and Reports. Unavailable
+screens are omitted rather than shown as locked cards. Direct visits to a
+forbidden screen redirect to the first permitted destination (currently Orders)
+before its loader requests protected data. API authorization remains independent.
+
+Managers can review served orders in Payments, while payment-entry controls
+remain exclusive to cashiers. Cashier receipts offer the next order or a return
+to Orders, without a link to manager-only reports.
+
 ## Run it
 
 ```bash

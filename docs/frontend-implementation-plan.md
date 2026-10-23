@@ -23,6 +23,24 @@ Contents: [1 Goals](#1-goals-and-what-accurate-means) ·
 
 ---
 
+## Current access update — issue #36 (23 October 2026)
+
+This update supersedes the original locked-tile navigation specification below.
+Sidebar links and startup tiles contain only screens permitted by the signed-in
+staff role: cashier → Orders/Payments; wait staff and kitchen → Orders;
+manager → all four screens. Locked feature tiles are not part of operational
+screens. The startup menu remains until the separate #37 change.
+
+Every protected screen checks its permission in its loader before requesting
+screen data. Forbidden direct URLs redirect to the first permitted screen
+(currently Orders); unauthenticated visitors still return to sign-in. The API
+continues to enforce its own role permissions.
+
+Cashier receipts omit manager-only sales-report links. Managers can review
+payment queues and order summaries but do not see cashier-only payment-entry
+controls. New visual baselines cover intentionally changed navigation and
+receipt layouts; original mock-up comparisons remain for unchanged regions.
+
 ## 1. Goals and what "accurate" means
 
 1. Every screen in the mock-ups exists in the app, built from the same

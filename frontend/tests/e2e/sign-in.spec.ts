@@ -149,14 +149,21 @@ test.describe("startup menu", () => {
       }
       await expect(main.getByRole("link")).toHaveCount(links.length);
       for (const name of locked) {
-        const tile = main.getByText(name, { exact: true }).locator("..");
-        await expect(tile).toContainText(`Locked for ${label}`);
-        await expect(tile).toHaveCSS("border-top-style", "dashed");
+        await expect(main.getByText(name, { exact: true })).toHaveCount(0);
       }
 
       await fontsReady(page);
       await blur(page);
-      await expectMatchesReference(page, `staff-startup-${slug}`, ARTBOARD);
+      await expect(main.getByText(/Locked for/)).toHaveCount(0);
+      await page.mouse.move(0, 0);
+      if (persona.role === "manager") {
+        await expectMatchesReference(page, `staff-startup-${slug}`, ARTBOARD);
+      } else {
+        // Preserve mock-ups; #36 removes the locked tiles from these layouts.
+        await expect(page).toHaveScreenshot(`staff-startup-${slug}.png`, {
+          animations: "disabled",
+        });
+      }
     });
   }
 

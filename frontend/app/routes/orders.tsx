@@ -24,7 +24,7 @@ import {
   type OrderStatus,
   type Role,
 } from "~/lib/api/types";
-import { requireStaffSession, rethrowApiError } from "~/lib/auth-guard";
+import { requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
 import { addToCart, cartTotal, changeQuantity, type CartLine } from "~/lib/domain/cart";
 import { orderPlacedEntries, pushEntries, statusChangedEntry } from "~/lib/domain/activity-log";
 import { categoriesPresent, categoryOf } from "~/lib/domain/menu-categories";
@@ -55,7 +55,7 @@ const POLL_MS = 10_000;
 const CUSTOMERS = [{ value: "walkin", label: "Walk-in guest" }];
 
 export async function clientLoader() {
-  const { staff } = requireStaffSession();
+  const { staff } = requireStaffScreen("orders");
   const creates = canCreateOrders(staff.role);
   try {
     const [orders, menu, apiTables] = await Promise.all([
