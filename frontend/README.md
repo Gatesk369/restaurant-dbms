@@ -41,7 +41,7 @@ described in the root `README.md`.
 | `VITE_PROTOTYPE_CONTROLS` | `false`                 | Shows the station's "Prototype only" advance button                                                                                |
 | `VITE_DEMO_PREFILL`       | `false`                 | Lets the sign-in role cards prefill seeded demo usernames (development only)                                                       |
 | `VITE_DEMO_PASSWORD`      | empty                   | Password prefilled with the demo username when `VITE_DEMO_PREFILL=true` (development only)                                         |
-| `VITE_TABLE_IDS`          | `1-12`                  | Table ids shown at the ordering station until `GET /api/tables/` exists: a range (`1-12`) or a list (`1001,1002`)                                |
+| `VITE_TABLE_IDS`          | `1-12`                  | Table ids shown at the ordering station until `GET /api/tables/` exists: a range (`1-12`) or a list (`1001,1002`)                  |
 | `VITE_STYLEGUIDE`         | unset                   | `true` adds the `/styleguide` primitives sheet used by the visual tests (the e2e build sets it; never set it for a deployed build) |
 
 `VITE_*` values are inlined at build time.
