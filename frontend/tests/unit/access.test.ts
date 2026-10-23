@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SCREENS, canAccess, getScreen } from "~/lib/access";
+import { SCREENS, canAccess, getScreen, defaultScreenForRole } from "~/lib/access";
 import { ROLES } from "~/lib/api/types";
 
 describe("screen access", () => {
@@ -17,5 +17,18 @@ describe("screen access", () => {
   it("keeps the sidebar order and labels from the mock-up", () => {
     expect(SCREENS.map((s) => s.nav)).toEqual(["Orders", "Payments", "Menu", "Reports"]);
     expect(getScreen("menu").title).toBe("Menu management");
+  });
+});
+
+describe("default staff workspace", () => {
+  it.each([
+    ["cashier", "/payments"],
+    ["wait_staff", "/orders"],
+    ["kitchen", "/orders"],
+    ["manager", "/orders"],
+  ] as const)("lands %s on a permitted %s", (role, path) => {
+    const destination = defaultScreenForRole(role);
+    expect(destination.path).toBe(path);
+    expect(canAccess(role, destination.key)).toBe(true);
   });
 });

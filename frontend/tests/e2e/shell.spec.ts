@@ -84,11 +84,18 @@ test.describe("staff shell", () => {
     });
 
     for (const path of forbidden) {
-      test(`${persona.role} redirects forbidden ${path} to Orders`, async ({ page }) => {
+      test(`${persona.role} redirects forbidden ${path} to its default workspace`, async ({
+        page,
+      }) => {
         await signInAs(page, persona);
         await page.goto(path);
-        await expect(page).toHaveURL(/\/orders$/);
-        await expect(page.getByRole("heading", { level: 1, name: "Orders" })).toBeVisible();
+        await expect(page).toHaveURL(persona.role === "cashier" ? "/payments" : "/orders");
+        await expect(
+          page.getByRole("heading", {
+            level: 1,
+            name: persona.role === "cashier" ? "Payments" : "Orders",
+          }),
+        ).toBeVisible();
         await expect(page.getByText(/Locked for/)).toHaveCount(0);
       });
     }

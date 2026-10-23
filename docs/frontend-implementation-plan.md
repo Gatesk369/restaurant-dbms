@@ -29,17 +29,32 @@ This update supersedes the original locked-tile navigation specification below.
 Sidebar links and startup tiles contain only screens permitted by the signed-in
 staff role: cashier → Orders/Payments; wait staff and kitchen → Orders;
 manager → all four screens. Locked feature tiles are not part of operational
-screens. The startup menu remains until the separate #37 change.
+screens. The subsequent #37 update below removes the startup menu.
 
 Every protected screen checks its permission in its loader before requesting
-screen data. Forbidden direct URLs redirect to the first permitted screen
-(currently Orders); unauthenticated visitors still return to sign-in. The API
-continues to enforce its own role permissions.
+screen data. Forbidden direct URLs use the role defaults described in #37 below;
+unauthenticated visitors still return to sign-in. The API continues to enforce
+its own role permissions.
 
 Cashier receipts omit manager-only sales-report links. Managers can review
 payment queues and order summaries but do not see cashier-only payment-entry
 controls. New visual baselines cover intentionally changed navigation and
 receipt layouts; original mock-up comparisons remain for unchanged regions.
+
+## Current entry-flow update — issue #37 (23 October 2026)
+
+This supersedes the original sign-in/startup-menu state machine and the startup
+requirements in #2/#20. The root route now renders only the sign-in form for
+visitors without a staff session. Successful login and existing sessions at `/`
+go directly to a permitted workspace: cashier → Payments; wait staff → Orders;
+kitchen → Orders; manager → Orders. The sidebar retains role-permitted navigation
+and sign-out. Startup tiles and their unused component/description data are removed.
+
+The role returned by the authentication API determines the landing screen;
+role cards and query-string return destinations cannot override it. Forbidden
+URLs use the same role default. Expired API sessions are cleared before redirecting
+to `/?reason=expired`, so the sign-in route does not send them back into a loop.
+Sign-out clears staff credentials and the session payment tally.
 
 ## 1. Goals and what "accurate" means
 

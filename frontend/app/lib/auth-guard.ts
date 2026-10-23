@@ -1,10 +1,10 @@
 import { redirect } from "react-router";
 
-import { canAccess, screensForRole, type ScreenKey } from "./access";
+import { canAccess, defaultScreenForRole, type ScreenKey } from "./access";
 import { ApiError } from "./api/client";
 
 import type { StaffSession } from "./api/types";
-import { getStaffSession } from "./session";
+import { clearStaffSession, getStaffSession } from "./session";
 
 /** Why the visitor was sent back to sign-in; the page words it. */
 export type SignInReason = "expired";
@@ -28,8 +28,7 @@ export function requireStaffSession(): StaffSession {
 export function requireStaffScreen(screen: ScreenKey): StaffSession {
   const session = requireStaffSession();
   if (!canAccess(session.staff.role, screen)) {
-    const destination = screensForRole(session.staff.role)[0];
-    if (!destination) throw new Response("Access denied", { status: 403 });
+    const destination = defaultScreenForRole(session.staff.role);
     throw redirect(destination.path);
   }
   return session;
@@ -40,6 +39,9 @@ export function requireStaffScreen(screen: ScreenKey): StaffSession {
  * reason; every other error is rethrown for the route's error boundary.
  */
 export function rethrowApiError(error: unknown): never {
-  if (error instanceof ApiError && error.isUnauthorized) throw signInRedirect("expired");
+  if (error instanceof ApiError && error.isUnauthorized) {
+    clearStaffSession();
+    throw signInRedirect("expired");
+  }
   throw error;
 }

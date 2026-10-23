@@ -18,6 +18,7 @@ function mountSignIn(initialEntry = "/") {
         action: ({ request }) => clientAction({ request } as Parameters<typeof clientAction>[0]),
       },
       { path: "/orders", element: <p>Orders screen</p> },
+      { path: "/payments", element: <p>Payments screen</p> },
     ],
     { initialEntries: [initialEntry] },
   );
@@ -115,61 +116,50 @@ describe("sign-in form", () => {
   });
 });
 
-describe("startup menu", () => {
-  it("signs in and offers only the screens the role may use", async () => {
-    const fetchSpy = mockLogin(200, { token: "tok", staff: peter });
-    mountSignIn();
+describe("direct workspace entry", () => {
+  const roles = [
+    ["cashier", "/payments", "Payments screen"],
+    ["wait_staff", "/orders", "Orders screen"],
+    ["kitchen", "/orders", "Orders screen"],
+    ["manager", "/orders", "Orders screen"],
+  ] as const;
+
+  it.each(roles)("sends authenticated %s directly to %s", async (role, path, heading) => {
+    const fetchSpy = mockLogin(200, { token: "tok", staff: { ...peter, role } });
+    const router = mountSignIn();
     await userEvent.type(await screen.findByLabelText("Username"), "okello.peter");
     await userEvent.type(screen.getByLabelText("Password"), "DemoPass123!");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
-
-    expect(await screen.findByRole("heading", { name: "Startup menu" })).toBeInTheDocument();
-    expect(screen.getByText("Signed in as Okello Peter, Wait Staff")).toBeInTheDocument();
-
+    expect(await screen.findByText(heading)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(path);
+    expect(getStaffSession()?.staff.role).toBe(role);
     const [url, init] = fetchSpy.mock.calls[0];
     expect(String(url)).toBe("http://127.0.0.1:8000/api/auth/login/");
     expect(JSON.parse(String(init?.body))).toEqual({
       username: "okello.peter",
       password: "DemoPass123!",
     });
-    expect(getStaffSession()?.token).toBe("tok");
-
-    expect(screen.getByRole("link", { name: /Orders/ })).toHaveAttribute("href", "/orders");
-    expect(screen.queryByRole("link", { name: /Payments/ })).toBeNull();
-    expect(screen.queryByText("Payments")).toBeNull();
-    expect(screen.queryByText("Menu management")).toBeNull();
-    expect(screen.queryByText("Reports")).toBeNull();
-    expect(screen.queryByText(/Locked for/)).toBeNull();
+    expect(screen.queryByText("Startup menu")).toBeNull();
   });
 
-  it("opens straight to the menu when a session already exists", async () => {
-    setStaffSession({
-      token: "t",
-      staff: {
-        staff_id: 1,
-        username: "tumusiime.ruth",
-        display_name: "Tumusiime Ruth",
-        role: "manager",
-      },
-    });
-    mountSignIn();
-    expect(await screen.findByText("Signed in as Tumusiime Ruth, Manager")).toBeInTheDocument();
-    expect(screen.getAllByRole("link")).toHaveLength(4);
-    expect(screen.queryByText(/Locked for/)).toBeNull();
-  });
+  it.each(roles)(
+    "redirects an existing %s session from root to %s",
+    async (role, path, heading) => {
+      setStaffSession({ token: "t", staff: { ...peter, role } });
+      const router = mountSignIn("/?next=/reports");
+      expect(await screen.findByText(heading)).toBeInTheDocument();
+      await waitFor(() => expect(router.state.location.pathname).toBe(path));
+    },
+  );
 
-  it("follows a tile to its screen", async () => {
-    setStaffSession({ token: "t", staff: { staff_id: 1, username: "u", role: "cashier" } });
-    const router = mountSignIn();
-    await userEvent.click(await screen.findByRole("link", { name: /Orders/ }));
-    await waitFor(() => expect(router.state.location.pathname).toBe("/orders"));
-  });
-
-  it("signs out and returns to the form", async () => {
-    setStaffSession({ token: "t", staff: { staff_id: 1, username: "u", role: "manager" } });
-    mountSignIn();
-    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
-    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
-    expect(getStaffSession()).toBeNull();
+  it("uses the server role rather than the role card or a return URL", async () => {
+    mockLogin(200, { token: "tok", staff: { ...peter, role: "cashier" } });
+    const router = mountSignIn("/?next=https://example.com&returnTo=/reports");
+    await userEvent.click(await screen.findByRole("radio", { name: /^Manager/ }));
+    await userEvent.type(screen.getByLabelText("Username"), "amina");
+    await userEvent.type(screen.getByLabelText("Password"), "secret123");
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText("Payments screen")).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/payments");
   });
 });
