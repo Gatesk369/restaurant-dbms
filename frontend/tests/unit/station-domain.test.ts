@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { initials, orderFor, payNote, placeholderImage, trackerStep } from "~/lib/domain/station";
+import { initials, orderFor, placeholderImage, trackerStep } from "~/lib/domain/station";
 import { EMPTY_DRAFT, clearDraft, loadDraft, saveDraft } from "~/lib/station-session";
 
 afterEach(() => sessionStorage.clear());
@@ -40,18 +40,6 @@ describe("wording", () => {
     expect(orderFor(6, "")).toBe("Table 6");
     expect(orderFor(6, "  Atim ")).toBe("Table 6 · Atim");
   });
-
-  it("repeats the payment choice", () => {
-    expect(payNote("till", "ORD-1047", "UGX 61,000", "", "MTN Mobile Money")).toBe(
-      "Pay at the till when you are ready. Quote ORD-1047 to the cashier.",
-    );
-    expect(payNote("momo", "ORD-1047", "UGX 61,000", " 0772123456 ", "Airtel Money")).toBe(
-      "A payment request for UGX 61,000 was sent to 0772123456 on Airtel Money. Approve it on your phone.",
-    );
-    expect(payNote("momo", "ORD-1047", "UGX 61,000", "", "Airtel Money")).toContain(
-      "your phone on",
-    );
-  });
 });
 
 describe("draft storage", () => {
@@ -67,6 +55,23 @@ describe("draft storage", () => {
     expect(loadDraft()).toEqual(draft);
     clearDraft();
     expect(loadDraft()).toEqual(EMPTY_DRAFT);
+  });
+
+  it("drops legacy payment fields without losing the cart or kitchen note", () => {
+    const draft = {
+      ...EMPTY_DRAFT,
+      screen: "review" as const,
+      table: 6,
+      lines: [{ menu_item_id: 1, quantity: 2 }],
+      notes: "no onions",
+    };
+    sessionStorage.setItem(
+      "rdbms.station",
+      JSON.stringify({ ...draft, pay: "momo", network: "Airtel Money", phone: "0772" }),
+    );
+    expect(loadDraft()).toEqual(draft);
+    saveDraft(loadDraft());
+    expect(JSON.parse(sessionStorage.getItem("rdbms.station")!)).toEqual(draft);
   });
 
   it("ignores something that is not a draft", () => {

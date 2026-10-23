@@ -78,3 +78,15 @@ tests/
 - Tokens live in `sessionStorage`; never log them.
 - Where the API cannot yet supply what a mock-up shows, follow the interim
   rendering in section 4.2 of the plan and mark the shim with the gap number.
+
+## Customer ordering and payment
+
+Customers submit their cart and kitchen instructions at `/station` without
+choosing a payment method. Review and tracking never initiate a payment request
+or claim payment was collected. Older saved drafts retain the cart and notes
+while discarding payment-choice, network, and phone fields.
+
+The cashier chooses the actual cash or mobile-money method at checkout. Cash
+amount/change and mobile network/phone validation remain in the cashier flow.
+The API stores Cash or Mobile Money for receipts and reports; network and phone
+remain local cashier details until backend issue #16 is implemented.
