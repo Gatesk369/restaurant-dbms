@@ -6,6 +6,21 @@ It talks to the Django API in `../backend` and is built to match the mock-ups in
 [`../docs/frontend-implementation-plan.md`](../docs/frontend-implementation-plan.md)
 and [`../docs/design-system.md`](../docs/design-system.md).
 
+## Ordering and staff responsibilities
+
+Customers submit orders through `/station`. The database assigns an available
+waiter, or queues the order as pending until one becomes available. Staff and
+managers use `/orders` to follow fulfillment; they do not create orders.
+
+Wait staff see only their assigned orders with table, items and special
+instructions. Kitchen staff start preparation and mark orders ready. The
+assigned waiter delivers the order and marks it served; managers retain a
+service override. Waiters bring payment options to the table, and cashiers
+record payment for served orders.
+
+This workflow supersedes the original staff order-entry mock-up and the G3
+customer-session fallback described in the historical frontend plan (#35).
+
 ## Run it
 
 ```bash
@@ -26,7 +41,7 @@ described in the root `README.md`.
 | `VITE_PROTOTYPE_CONTROLS` | `false`                 | Shows the station's "Prototype only" advance button                                                                                |
 | `VITE_DEMO_PREFILL`       | `false`                 | Lets the sign-in role cards prefill seeded demo usernames (development only)                                                       |
 | `VITE_DEMO_PASSWORD`      | empty                   | Password prefilled with the demo username when `VITE_DEMO_PREFILL=true` (development only)                                         |
-| `VITE_TABLE_IDS`          | `1-12`                  | Table ids shown on Orders until `GET /api/tables/` exists: a range (`1-12`) or a list (`1001,1002`)                                |
+| `VITE_TABLE_IDS`          | `1-12`                  | Table ids shown at the ordering station until `GET /api/tables/` exists: a range (`1-12`) or a list (`1001,1002`)                                |
 | `VITE_STYLEGUIDE`         | unset                   | `true` adds the `/styleguide` primitives sheet used by the visual tests (the e2e build sets it; never set it for a deployed build) |
 
 `VITE_*` values are inlined at build time.

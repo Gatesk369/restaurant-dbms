@@ -59,6 +59,9 @@ def change_status(user, order_id, new_status):
         )
         if row is None:
             raise NotFound("Order not found.")
+        # Reject another waiter's order before validating its current state.
+        if user.role == "wait_staff" and row["staff_id"] != user.staff_id:
+            raise PermissionDenied("That order is not assigned to you.")
         current = row["order_status"]
 
         if new_status == "cancelled":
@@ -78,7 +81,8 @@ def change_status(user, order_id, new_status):
                 and user.role == "wait_staff"
                 and row["staff_id"] == user.staff_id
             )
-            if user.role not in ("kitchen", "manager") and not serves_own:
+            prepares = user.role == "kitchen" and new_status in ("preparing", "ready")
+            if user.role != "manager" and not prepares and not serves_own:
                 raise PermissionDenied("Your role can't make that change.")
 
         Order.update(order_id, order_status=new_status)

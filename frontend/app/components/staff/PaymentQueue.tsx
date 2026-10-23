@@ -16,7 +16,7 @@ export function PaymentQueue({ orders, selectedId, onSelect }: PaymentQueueProps
       <PanelHeading title="Served orders" />
       {orders.length === 0 ? (
         <p className="m-0 rounded-md bg-tea p-4 text-body tracking-body">
-          Nothing to collect. Orders appear here when the kitchen marks them served.
+          Nothing to collect. Orders appear here when the assigned waiter marks them served.
         </p>
       ) : null}
       <div className="flex flex-col gap-2">
