@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from "react";
 
-import { ActivityLog } from "~/components/ui/ActivityLog";
 import { Button, ButtonLink } from "~/components/ui/Button";
 import { Chip, ToggleChip, ToggleGroup } from "~/components/ui/Chip";
 import { DataCell, DataHeader, DataRow, DataTable } from "~/components/ui/DataTable";
@@ -183,10 +182,7 @@ export default function Styleguide() {
 
       <Section id="panels" title="Panels, stepper, messages">
         <Panel>
-          <PanelHeading
-            title="Database activity"
-            caption="Triggers that run when an order is placed."
-          />
+          <PanelHeading title="Order quantities" caption="Adjust the items in your order." />
           <div className="flex items-center gap-4">
             <QuantityStepper
               value={qty}
@@ -212,7 +208,7 @@ export default function Styleguide() {
         <LockedTile title="Payments" roleLabel="Wait Staff" className="max-w-xs" />
       </Section>
 
-      <Section id="data" title="Data table and log">
+      <Section id="data" title="Data table">
         <DataTable label="Menu items" columns="76px minmax(0,1.6fr) 100px 112px" minWidth={480}>
           <DataHeader>
             <DataCell header>ID</DataCell>
@@ -239,13 +235,6 @@ export default function Styleguide() {
             </DataCell>
           </DataRow>
         </DataTable>
-        <ActivityLog
-          description="Triggers that run when an order is placed or changes status."
-          entries={[
-            { time: "12:41", text: "TABLES: Table 9 free_status set to FALSE" },
-            { time: "12:41", text: "ORDERS: ORD-1046 inserted with status pending" },
-          ]}
-        />
       </Section>
 
       <Section id="icons" title="Icons">

@@ -63,8 +63,8 @@ export default function Orders() {
     setBoardError(null);
     setToast("");
     try {
-      await changeOrderStatus(order.order_id, to);
-      setToast(`Order ORD-${order.order_id} marked ${statusLabel(to).toLowerCase()}.`);
+      const updated = await changeOrderStatus(order.order_id, to);
+      setToast(`Order ORD-${updated.order_id} is now ${statusLabel(updated.order_status)}.`);
     } catch (error) {
       setBoardError(
         error instanceof ApiError

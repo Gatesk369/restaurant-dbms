@@ -3,6 +3,13 @@
 Plan for building the Restaurant DBMS React frontend so that it matches the
 approved mock-ups and talks to the existing Django API.
 
+Issue #39 update: Orders and Payments no longer render Database activity panels.
+Order submission confirmations, status-change messages, payment receipts, and
+errors remain. The historical trigger examples below are educational notes,
+not a database audit stream. See [Database behavior](data-dictionary.md#trigger-and-validation-rules)
+for the backend behavior; triggers, transactions, and actual audit logging are
+unaffected by this frontend change.
+
 |                  |                                                                                                                                                                                                                                     |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Scope            | Staff app (Sign-in and startup menu, Orders, Payments, Menu, Reports) and the customer Ordering station                                                                                                                             |
@@ -262,7 +269,7 @@ Phase 2.
 | G14 | "Call a waiter" notifies a waiter                                                                           | No endpoint                                                                         | Toast only (as in the mock-up); nothing is sent                                                                                             | `POST /api/my/call-waiter/`                                                                                              |
 | G15 | "Mobile money now" collects payment                                                                         | No customer-facing payment flow                                                     | Resolved by #38: no customer payment selection; cashier records the actual method                                                           | Depends on OQ3                                                                                                           |
 | G16 | Order tracker reflects kitchen progress                                                                     | Available via polling `GET /api/my/orders/{id}/`                                    | Poll every 5 s                                                                                                                              | None                                                                                                                     |
-| G17 | Database activity log of trigger effects                                                                    | The API returns results, not trigger logs                                           | Log lines are built from real responses plus known trigger rules (section 6.2, 6.3)                                                         | None; optional later `GET /api/staff/activity/`                                                                          |
+| G17 | Database activity log of trigger effects                                                                    | The API returns results, not trigger logs                                           | Resolved by #39: UI log removed; trigger explanations remain in documentation                                                               | None; optional later `GET /api/staff/activity/`                                                                          |
 
 Display identifiers are formatted client-side: `ORD-{order_id}`,
 `PAY-{payment_id padded to 4}`, `MI-{menu_item_id padded to 3}`, table label
@@ -302,7 +309,7 @@ routes/
 components/
   ui/                      Button, Input, Select, Textarea, Field, FieldError, Chip,
                            ToggleChip, ToggleGroup, RadioCard, Panel, Toast, Stepper,
-                           DataTable, TableTile, ActivityLog, Icon (+ icon paths)
+                           DataTable, TableTile, Icon (+ icon paths)
   staff/                   Sidebar, PageHeader, StartupTile, LockedPanel, OrderTicket,
                            ActiveOrdersTable, CheckoutPanel, Receipt, MenuEditor, SummaryStrip
   charts/                  RevenueBars, PaymentDonut, HorizontalBar
@@ -314,7 +321,7 @@ lib/
   session.ts               staff and customer session storage helpers
   format.ts                money, ids, dates
   validation.ts            phone, price, cash, credentials
-  domain/                  order-status.ts, order-math.ts, activity-log.ts, week-range.ts
+  domain/                  order-status.ts, order-math.ts, week-range.ts
   hooks/                   use-poll.ts, use-toast.ts
   category-fallback.ts     interim G5 lookup (delete when G5 lands)
 tests/
@@ -407,7 +414,7 @@ menu (available items), staff queue (all statuses the role may see), customers
 Layout (top to bottom): page header (h1 "Orders", subtitle "Open an order for a
 table, add items, then send it to the kitchen.", chip `{n} of 12 tables free`);
 optional status toast; two columns (left: Table panel, Menu items panel; right:
-New order ticket, Database activity); full-width Active orders panel.
+New order ticket); full-width Active orders panel.
 
 | Block            | Behaviour                                                                                                                                                                                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -430,7 +437,8 @@ New order ticket, Database activity); full-width Active orders panel.
 3. Failures: unavailable item → panel error from the API message; table taken
    (`400`) → toast-style `role="alert"`, tables revalidated.
 
-**Database activity** (newest first, max 6, `HH:MM`):
+**Historical educational examples** (panel removed in #39; these describe
+expected effects, not queried audit records):
 
 | Trigger of the log line | Text                                                             | Source                                                                 |
 | ----------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -458,9 +466,7 @@ New order ticket, Database activity); full-width Active orders panel.
   the page's life. The backend assigns the waiter in both cases.
 - Served orders from earlier days are treated as finished while the API sends
   no `paid` flag (gap G10); once it does, `paid === true` decides.
-- The Database activity panel starts empty and fills from real responses; it
-  does not show the "assigned to <waiter>" line because the order response
-  carries no waiter.
+- Status changes announce the returned order status in a `role="status"` message.
 - The picker orders items by category, then menu id. The mock-up lists Steamed
   Rice before Chapati here (and the other way round on the Menu screen).
 - Polling is every 10 s and paused while the tab is hidden.
@@ -477,7 +483,7 @@ view), pay endpoint.
 
 Layout: header (h1 "Payments", subtitle "Check out served orders with cash or
 mobile money.", chips `{n} awaiting payment` and `Received today UGX …`, see
-G12); left column: Served orders list + Database activity; right: Checkout,
+G12); left column: Served orders list; right: Checkout,
 Receipt or the all-paid panel.
 
 | State         | Content                                                                                                                                                                                                                                                                                                                                                |
@@ -498,10 +504,11 @@ attempt (`tried`) and clear on edit. Selecting another order resets the form.
 "Cash"|"Mobile Money"}` (the amount is never sent; the server computes it) →
 on `201` show the receipt with `payment_id`, `amount`, method label (the
 network name for mobile money, G11), change = received − amount (client-side),
-revalidate queue and tables. `409`: show the server message and refresh the
+revalidate the queue. Table availability is refreshed when Orders loads its
+tables. `409`: show the server message and refresh the
 queue.
 
-**Database activity** (real responses): `SALES_RECORD: UGX 60,000 added to
+**Historical educational examples** (panel removed in #39): `SALES_RECORD: UGX 60,000 added to
 today's sales`, `TABLES: Table 7 free_status set to TRUE` (written only after the
 refetch confirms the table is free; otherwise `TABLES: Table 7 still has an
 unpaid order`), `PAYMENTS: PAY-0388 inserted for ORD-1045 (Cash, UGX 60,000)`.
@@ -524,11 +531,8 @@ backend has no paid status, so the line would be untrue.
 - Only the method (`Cash` or `Mobile Money`) is sent. The network and phone
   number are collected and validated for the cashier but not stored (gap G11);
   the receipt prints the network from this device.
-- The Database activity panel starts empty. Its lines come from the response:
-  `SALES_RECORD` (from the sales record), `TABLES` (confirmed from
-  `GET /api/tables/` when it exists, otherwise worded as conditional) and
-  `PAYMENTS`. The mock-up's `ORDERS ... set to paid` line is not written
-  because the backend has no paid status.
+- Payment recording shows the receipt directly; no frontend log or log-only
+  tables fetch is needed (#39).
 - The receipt's heading sits inside a `role="status"` region (the mock-up put
   the role on the heading itself, which removed its heading semantics).
 
@@ -709,22 +713,21 @@ least 56px (category 64, tables 96); the stepper announces correctly.
 
 Pure functions in `lib/`, each ported from the mock-up logic and unit-tested:
 
-| Function                           | Rule (from the mock-up)                                         |
-| ---------------------------------- | --------------------------------------------------------------- |
-| `formatUgx(n)`                     | `'UGX ' + n.toLocaleString('en-US')`                            |
-| `orderTotal(lines)`                | sum of `qty × price` over lines (server total used once placed) |
-| `isValidPhone(s)`                  | `/^07\d{8}$/.test(s.replace(/\s+/g, ''))`                       |
-| `isValidPrice(s)`                  | `/^[0-9]+$/.test(s.trim()) && parseInt(s, 10) > 0`              |
-| `cashShortfall(received, total)`   | `total - received` when `received < total`                      |
-| `changeDue(received, total)`       | `max(received - total, 0)`                                      |
-| `canSignIn(u, p)`                  | `u.trim() !== '' && p.length >= 4`                              |
-| `quickAmounts(total)`              | Exact amount, 50,000, 100,000                                   |
-| `statusChip(status)`               | D6 table                                                        |
-| `nextAction(role, order)`          | D6 button matrix                                                |
-| `weekRange(today)`                 | Monday to Sunday, Africa/Kampala                                |
-| `groupByWeek(daily)`               | sum orders and revenue per week for the 4-week view             |
-| `slicePercent(rows)`               | rounding so slices sum to 100                                   |
-| `activityEntries(event, response)` | builds the Database activity lines                              |
+| Function                         | Rule (from the mock-up)                                         |
+| -------------------------------- | --------------------------------------------------------------- |
+| `formatUgx(n)`                   | `'UGX ' + n.toLocaleString('en-US')`                            |
+| `orderTotal(lines)`              | sum of `qty × price` over lines (server total used once placed) |
+| `isValidPhone(s)`                | `/^07\d{8}$/.test(s.replace(/\s+/g, ''))`                       |
+| `isValidPrice(s)`                | `/^[0-9]+$/.test(s.trim()) && parseInt(s, 10) > 0`              |
+| `cashShortfall(received, total)` | `total - received` when `received < total`                      |
+| `changeDue(received, total)`     | `max(received - total, 0)`                                      |
+| `canSignIn(u, p)`                | `u.trim() !== '' && p.length >= 4`                              |
+| `quickAmounts(total)`            | Exact amount, 50,000, 100,000                                   |
+| `statusChip(status)`             | D6 table                                                        |
+| `nextAction(role, order)`        | D6 button matrix                                                |
+| `weekRange(today)`               | Monday to Sunday, Africa/Kampala                                |
+| `groupByWeek(daily)`             | sum orders and revenue per week for the 4-week view             |
+| `slicePercent(rows)`             | rounding so slices sum to 100                                   |
 
 ## 8. Fidelity strategy
 
@@ -795,7 +798,7 @@ to 6 each end with the review gate from section 8.
 | 2.2 | Table panel, menu picker, ticket, steppers, validation      | L    | Section 6.2 ticket states match       |
 | 2.3 | Place order (G3 workaround), toast, revalidate              | M    | Order appears on the board as Pending |
 | 2.4 | Active orders board, filters, role-aware next step, polling | M    | D6 matrix verified for four roles     |
-| 2.5 | Database activity log from responses                        | S    | Lines match the table in 6.2          |
+| 2.5 | Removed in #39: UI-only activity log                        | S    | Task confirmations retained           |
 
 ### Phase 3: Payments
 

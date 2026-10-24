@@ -11,7 +11,6 @@ import { ICON_NAMES, Icon } from "~/components/ui/Icon";
 import { QuantityStepper } from "~/components/ui/QuantityStepper";
 import { RadioCard, RadioCardGroup } from "~/components/ui/RadioCard";
 import { TableTile } from "~/components/ui/TableTile";
-import { ActivityLog } from "~/components/ui/ActivityLog";
 import { LockedTile } from "~/components/ui/LockedTile";
 
 function inRouter(element: React.ReactElement) {
@@ -244,21 +243,6 @@ describe("static primitives", () => {
   it("prints the status word in a chip", () => {
     render(<Chip tone="done">Served</Chip>);
     expect(screen.getByText("Served")).toBeInTheDocument();
-  });
-
-  it("lists activity newest first as given", () => {
-    render(
-      <ActivityLog
-        description="Triggers."
-        entries={[
-          { time: "12:42", text: "ORDERS: ORD-1047 inserted with status pending" },
-          { time: "12:41", text: "TABLES: Table 9 free_status set to FALSE" },
-        ]}
-      />,
-    );
-    const items = screen.getAllByRole("listitem").map((li) => li.textContent);
-    expect(items[0]).toContain("ORD-1047");
-    expect(screen.getByRole("heading", { name: "Database activity" })).toBeInTheDocument();
   });
 
   it("states which role a screen is locked for", () => {

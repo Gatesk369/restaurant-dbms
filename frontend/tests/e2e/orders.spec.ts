@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { FakeApi, type FakeOptions } from "./fake-api";
-import { PERSONAS, fontsReady, signInAs, type Persona } from "./helpers";
+import { PERSONAS, fontsReady, mockApi, signInAs, type Persona } from "./helpers";
 
 test.use({ viewport: { width: 1360, height: 900 } });
 
@@ -26,6 +26,8 @@ test.describe("customer-only order entry", () => {
     }) => {
       const api = await openOrders(page, persona);
       await expect(board(page)).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Database activity" })).toHaveCount(0);
+      await expect(page.getByText(/ORDER_ITEMS:|TABLES:|ORDERS:/)).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "New order" })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Menu items" })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Place order" })).toHaveCount(0);
@@ -65,7 +67,7 @@ test.describe("the Active orders board", () => {
     await expect(rows.nth(7)).toContainText("ORD-1039");
   });
 
-  test("lets the manager move an order along and confirms the result", async ({ page }) => {
+  test("lets the manager move an order along with task feedback", async ({ page }) => {
     const api = await openOrders(page, OKELLO_AS_MANAGER);
     const row = board(page).getByRole("row", { name: /ORD-1044/ });
     await expect(row.getByText("Pending", { exact: true })).toBeVisible();
@@ -76,11 +78,30 @@ test.describe("the Active orders board", () => {
     expect(api.callsTo("POST", "/api/staff/orders/1044/status/")[0].body).toEqual({
       status: "preparing",
     });
-    await expect(page.getByText("Order ORD-1044 marked preparing.")).toBeVisible();
+    await expect(page.getByRole("status")).toHaveText("Order ORD-1044 is now Preparing.");
+    await expect(page.getByRole("heading", { name: "Database activity" })).toHaveCount(0);
+    await expect(page.getByText(/order_status|free_status/)).toHaveCount(0);
 
     await row.getByRole("button", { name: "Mark ready" }).click();
     await expect(row.getByText("Ready", { exact: true })).toBeVisible();
+    await expect(page.getByRole("status")).toHaveText("Order ORD-1044 is now Ready.");
     await expect(row.getByRole("button", { name: "Mark served" })).toBeVisible();
+  });
+
+  test("keeps actionable status errors without announcing success", async ({ page }) => {
+    await openOrders(page, OKELLO_AS_MANAGER);
+    await mockApi(page, "/api/staff/orders/1044/status/", () => ({
+      status: 409,
+      body: { detail: "This order has already changed. Refresh and try again." },
+    }));
+    const row = board(page).getByRole("row", { name: /ORD-1044/ });
+    await row.getByRole("button", { name: "Start preparing" }).click();
+    await expect(page.getByRole("alert")).toHaveText(
+      "Error: This order has already changed. Refresh and try again.",
+    );
+    await expect(page.getByRole("status")).toHaveCount(0);
+    await expect(row.getByText("Pending", { exact: true })).toBeVisible();
+    await expect(row.getByRole("button", { name: "Start preparing" })).toBeEnabled();
   });
 
   test("offers a served order to the cashier role as a payment link", async ({ page }) => {
