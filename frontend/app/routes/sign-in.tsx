@@ -23,7 +23,7 @@ export function meta({}: Route.MetaArgs) {
 /** Role cards in the mock-up's order, with their captions. */
 const ROLE_CARDS: { role: Role; hint: string }[] = [
   { role: "cashier", hint: "Takes payments" },
-  { role: "wait_staff", hint: "Creates orders" },
+  { role: "wait_staff", hint: "Serves assigned orders" },
   { role: "kitchen", hint: "Updates order status" },
   { role: "manager", hint: "Menu and reports" },
 ];

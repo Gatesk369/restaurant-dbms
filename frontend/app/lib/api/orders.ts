@@ -1,5 +1,5 @@
 import { parseUgx } from "../money";
-import { ApiError, request } from "./client";
+import { request } from "./client";
 import type { Order, OrderItem, OrderStatus } from "./types";
 
 interface WireOrderItem {
@@ -74,66 +74,4 @@ export async function changeOrderStatus(orderId: number, status: OrderStatus): P
       body: { status },
     }),
   );
-}
-
-export interface NewOrderLine {
-  menu_item_id: number;
-  quantity: number;
-  special_instructions?: string;
-}
-
-/**
- * Whether POST /api/staff/orders/ exists yet (gap G3, issue #14). Decided on
- * the first call and remembered for the life of the page.
- */
-let staffCreate: "unknown" | "yes" | "no" = "unknown";
-
-/** Test hook: forget what was learned about the API. */
-export function resetOrderCapabilities(): void {
-  staffCreate = "unknown";
-}
-
-async function placeViaStaffEndpoint(tableId: number, items: NewOrderLine[]): Promise<Order> {
-  return toOrder(
-    await request<WireOrder>("/api/staff/orders/", {
-      method: "POST",
-      body: { table_id: tableId, items },
-    }),
-  );
-}
-
-/**
- * Interim path for gap G3: open an anonymous customer session on the table,
- * then post the order with that session's token. The backend assigns the
- * waiter itself.
- */
-async function placeViaCustomerSession(tableId: number, items: NewOrderLine[]): Promise<Order> {
-  const customer = await request<{ session_token: string }>("/api/customers/", {
-    method: "POST",
-    body: { table_id: tableId },
-    auth: "none",
-  });
-  return toOrder(
-    await request<WireOrder>("/api/my/orders/", {
-      method: "POST",
-      body: { items },
-      auth: "customer",
-      customerToken: customer.session_token,
-    }),
-  );
-}
-
-export async function placeOrder(tableId: number, items: NewOrderLine[]): Promise<Order> {
-  if (staffCreate !== "no") {
-    try {
-      const order = await placeViaStaffEndpoint(tableId, items);
-      staffCreate = "yes";
-      return order;
-    } catch (error) {
-      const missing = error instanceof ApiError && (error.status === 404 || error.status === 405);
-      if (!missing) throw error;
-      staffCreate = "no";
-    }
-  }
-  return placeViaCustomerSession(tableId, items);
 }

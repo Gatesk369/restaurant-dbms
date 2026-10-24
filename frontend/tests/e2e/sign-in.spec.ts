@@ -152,18 +152,21 @@ test.describe("startup menu", () => {
         await expect(main.getByText(name, { exact: true })).toHaveCount(0);
       }
 
+      await expect(main.getByRole("link", { name: /^Orders/ })).toContainText(
+        "Follow customer orders from assignment through preparation and service.",
+      );
+      await expect(
+        main.getByText("Create orders and follow them from pending to served."),
+      ).toHaveCount(0);
       await fontsReady(page);
       await blur(page);
       await expect(main.getByText(/Locked for/)).toHaveCount(0);
       await page.mouse.move(0, 0);
-      if (persona.role === "manager") {
-        await expectMatchesReference(page, `staff-startup-${slug}`, ARTBOARD);
-      } else {
-        // Preserve mock-ups; #36 removes the locked tiles from these layouts.
-        await expect(page).toHaveScreenshot(`staff-startup-${slug}.png`, {
-          animations: "disabled",
-        });
-      }
+      // Issue #35 deliberately changed the Orders tile copy and its wrapping.
+      // Keep the original mock-ups intact and compare the revised UI separately.
+      await expect(page).toHaveScreenshot(`staff-startup-${slug}.png`, {
+        animations: "disabled",
+      });
     });
   }
 

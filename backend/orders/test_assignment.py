@@ -94,6 +94,18 @@ class CustomerOrderAutoAssignTests(TestCase):
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data["order_status"], "confirmed")
 
+    def test_customer_orders_wait_until_the_assigned_waiter_finishes(self):
+        first = self.place().data
+        second = self.place()
+        self.assertEqual(second.status_code, 201)
+        self.assertEqual(second.data["order_status"], "pending")
+        self.assertIsNone(Order.get(second.data["order_id"])["staff_id"])
+        for status in ("preparing", "ready", "served"):
+            Order.update(first["order_id"], order_status=status)
+        queued = Order.get(second.data["order_id"])
+        self.assertEqual(queued["order_status"], "confirmed")
+        self.assertEqual(queued["staff_id"], Order.get(first["order_id"])["staff_id"])
+
     def test_customer_can_cancel_a_confirmed_order(self):
         order_id = self.place().data["order_id"]
         r = self.client.post(
