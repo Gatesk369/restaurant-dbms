@@ -42,7 +42,7 @@ export function DoneStep({
   onReset,
 }: DoneStepProps) {
   return (
-    <div className="box-border flex h-[728px] gap-12 px-12 py-8">
+    <div className="station-step station-done box-border flex flex-1 gap-12 px-12 py-8">
       <div className="flex min-w-0 flex-[1.2_1_0] flex-col gap-6">
         <div role="status" className="flex items-center gap-4">
           <span className="inline-flex size-14 flex-none items-center justify-center rounded-full bg-moss text-white">
@@ -126,7 +126,7 @@ export function DoneStep({
 
       <section className="box-border flex min-w-0 flex-[1_1_0] flex-col gap-3 rounded-md border border-tea p-6">
         <h2 className="m-0 text-panel font-normal">Your order</h2>
-        <div className="min-h-0 flex-auto overflow-y-auto">
+        <div className="flex-auto">
           {summary.map((line) => (
             <div
               key={line.text}

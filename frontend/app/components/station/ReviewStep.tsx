@@ -36,19 +36,19 @@ export function ReviewStep({
   onSend,
 }: ReviewStepProps) {
   return (
-    <div className="box-border flex h-[728px] flex-col gap-4 p-6">
+    <div className="station-step station-review box-border flex flex-1 flex-col gap-4 p-6">
       <fieldset disabled={sending} className="contents">
-        <div className="flex min-h-0 flex-auto gap-6">
+        <div className="station-review-columns flex flex-auto gap-6">
           <section className="box-border flex min-w-0 flex-[1.2_1_0] flex-col gap-3 rounded-md border border-tea p-6">
             <div>
               <h2 className="m-0 text-title font-normal">Check your order</h2>
               <p className="m-0 text-body tracking-body text-moss">{orderFor}</p>
             </div>
-            <div className="min-h-0 flex-auto overflow-y-auto">
+            <div className="flex-auto">
               {cart.map((line) => (
                 <div
                   key={line.menuItemId}
-                  className="flex items-center gap-4 border-b border-tea py-[10px]"
+                  className="flex flex-wrap items-center gap-4 border-b border-tea py-[10px]"
                 >
                   <div className="min-w-0 flex-auto">
                     <div className="text-heading font-bold tracking-heading">{line.name}</div>
@@ -75,7 +75,7 @@ export function ReviewStep({
             </div>
           </section>
 
-          <section className="box-border flex min-w-0 flex-[1_1_0] flex-col gap-4 overflow-y-auto pr-1">
+          <section className="box-border flex min-w-0 flex-[1_1_0] flex-col gap-4">
             <Field label="Special instructions for the kitchen">
               <Textarea
                 controlSize="touch"
@@ -90,13 +90,13 @@ export function ReviewStep({
 
         {error ? <FieldError>{error}</FieldError> : null}
 
-        <div className="flex flex-none items-center justify-between gap-4">
+        <div className="station-actions flex flex-none flex-wrap items-center justify-between gap-4">
           <Button variant="tonal" size="touch" onClick={onBack}>
             Back to menu
           </Button>
           <Button
             size="touch"
-            className="min-w-[320px]"
+            className="w-full sm:w-auto sm:min-w-[320px]"
             pending={sending}
             pendingLabel="Sending order…"
             onClick={onSend}

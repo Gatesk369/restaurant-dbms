@@ -116,8 +116,8 @@ export function Button({
         {pending ? <Spinner /> : null}
         {pending ? <span className={icon ? "sr-only" : undefined}>{pendingLabel}</span> : children}
       </button>
-      {/* Outside the busy button so assistive technology can announce it immediately. */}
-      <span className="sr-only" aria-live="polite" aria-atomic="true">
+      {/* Outside the busy button; fixed positioning keeps this hidden node from widening scroll areas. */}
+      <span className="sr-only fixed" aria-live="polite" aria-atomic="true">
         {pending ? pendingLabel : ""}
       </span>
     </>

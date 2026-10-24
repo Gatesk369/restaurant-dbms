@@ -107,18 +107,18 @@ the sign-in aside and form pad `48 32`.
 
 ```
 ┌────────────┬──────────────────────────────────────────────┐
-│ sidebar    │ content (max-width 1280, margin 0 auto)      │
+│ sidebar    │ content (fills remaining viewport width)      │
 │ 240px      │ padding 24 24 48, column, gap 24             │
 │ forest     │                                              │
 └────────────┴──────────────────────────────────────────────┘
 ```
 
-- Wrapper: `display:flex; flex-wrap:wrap; align-items:stretch; background:page`.
+- Wrapper: `display:flex; min-height:100dvh; align-items:stretch; background:page`.
 - Sidebar: `flex:0 0 240px; background:forest; color:page`. Inner block is
   `position:sticky; top:env(safe-area-inset-top,0)`, column, gap 24, padding
-  `24 12`.
-- Content column: `flex:1 1 640px; min-width:0`.
-- Under 880px wide the sidebar becomes a full-width row (`flex:1 1 100%`), the
+  `24 12`. It can scroll independently on short landscape screens.
+- Content column: `flex:1; min-width:0`, full available width with padding `24 24 48`.
+- Below 880px the shell stacks and the sidebar becomes a full-width row; the
   inner block is `position:static` with padding 16, and nav and footer items wrap
   in a row.
 - Page header: flex row, wrap, `align-items:flex-end`, `justify-content:space-between`,
@@ -138,13 +138,26 @@ Full-height `page`, padding `48 16`, content centred. Card: `max-width:1040`
 (Hero) and lede on top and the course line (12/16) at the bottom. Right main
 (`flex:1.5 1 440px`) is `page`, padding `48 32`.
 
-### Ordering station canvas
+### Ordering station workspace
 
-Fixed `1280 × 800`, column, `overflow:hidden`. Header 72px (`forest`, padding
-`0 24`, wordmark left, stepper and "Call a waiter" right). Content area is a fixed
-`728px` high box; the toast is absolutely positioned inside it (`top:16`,
-centred, `z-index:2`). Each step fills the box with its own padding (see
-[Station components](#ordering-station-components)).
+Issue #41 supersedes the fixed 1280 × 800 artboard and D11 uniform scaling.
+The workspace fills the viewport (`min-height:100dvh`) and uses normal document
+scrolling. Text and controls retain their CSS sizes; no transform scales them.
+The header is at least 72px high. At 1100px and below, progress wraps onto its
+own row. Below 768px the progress connectors are hidden, keeping the four
+numbered labels visible.
+
+The table introduction and picker share flexible columns, stacking below 768px;
+the picker changes from four columns to two. The menu uses a 200px category
+rail, a fluid item grid (minimum card width 180px), and a 340px cart. At 1100px
+and below, categories wrap above the menu and a 300px cart; below 768px all
+three stack. A desktop cart sticks near the top while the document scrolls;
+a tall cart remains reachable through normal scrolling. Review and confirmation
+stack at 1100px and below. Quantity rows and primary action rows wrap without
+shrinking touch targets. No step has a fixed height or nested scrolling list.
+
+Representative before/after captures and verification notes are in
+[issue-41/README.md](issue-41/README.md).
 
 ---
 
@@ -426,10 +439,10 @@ otherwise.
 
 ### Table step (1)
 
-Two columns, padding `32 48`, gap 64. Left (440px): hero title, lede, optional
+Two columns, padding `32 48`, gap 64. Left (flexible, basis 440px): hero title, lede, optional
 name field ("Your name (optional)"), full-width **Start order** (disabled until
 a table is chosen), hint (`Choose a table to continue.` → `Table 6 selected.`).
-Right: "Choose your table" panel title, 4×3 grid of TableTiles, caption "Tables
+Right: "Choose your table" panel title, four-column grid of TableTiles (two columns below 768px), caption "Tables
 marked In use already have an order open."
 
 ### Menu step (2)
@@ -438,9 +451,9 @@ Padding 24, gap 24, three columns:
 
 1. **Category rail** (200px): `nav aria-label="Menu categories"`, five 64px
    category buttons (16/700, radius 8, left aligned, `aria-pressed`), then
-   "Change table" (touch-sm, pinned to the bottom).
-2. **Item grid** (flex): title = category, scroll area, 3 columns, gap 12.
-3. **Cart** (340px): bordered panel, "Your order" + `Table 6 · Name`, scrolling
+   "Change table" (touch-sm).
+2. **Item grid** (flex): title = category, auto-fitting columns, gap 12.
+3. **Cart** (340px): bordered panel, "Your order" + `Table 6 · Name`, normal-flow
    list with steppers, Total (24/700), full-width **Review order** (disabled when
    empty).
 
@@ -456,7 +469,7 @@ r=26 at 50% opacity, two-letter initials (24/700 forest).
 ### Review step (3)
 
 Padding 24, gap 16. Top row: left panel (flex 1.2, padding 24) "Check your
-order" (Page title) with scrolling lines (steppers 48px) and a Total (32/700);
+order" (Page title) with normal-flow lines (steppers 48px) and a Total (32/700);
 right column (flex 1): kitchen notes textarea, **How will you pay?** radio cards,
 then either the till message (tea box) or Network + Phone fields with FieldError.
 Bottom bar: "Back to menu" (tonal) left, `Send to kitchen · UGX 52,000`
@@ -521,7 +534,7 @@ values for anything in the tables above.
 
   --shadow-toast: 0 4px 8px #18442a33;
 
-  --container-content: 1280px; /* staff content max width: max-w-content */
+  --container-content: 1280px; /* styleguide reference width; staff workspace is fluid */
   --container-signin: 1040px; /* sign-in shell: max-w-signin */
 
   --text-hero: 36px;

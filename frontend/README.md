@@ -165,3 +165,20 @@ restore controls and retain input for retry.
 repeated clicks, injects failures, and verifies retries and single order/payment
 creation. Call-a-waiter remains a synchronous prototype toast (backend #18), so
 it has immediate feedback rather than a simulated network loading state.
+
+## Responsive workspace
+
+Staff pages fill the viewport height and available width. Below 880px,
+navigation becomes a wrapping row above the content. Wide data tables scroll
+inside their panels instead of widening the page.
+
+Customer ordering uses responsive columns and normal vertical scrolling, replacing
+the original fixed-canvas scaling (#41). Text and touch controls retain their sizes.
+Categories move above the menu at 1100px and below; ordering panels stack below
+768px. Review and confirmation stack at 1100px. Background polling and draft
+persistence work as before.
+
+`tests/e2e/responsive.spec.ts` covers staff at 512, 880, 1024, 1360 and 1920px, and all
+ordering steps at 1024×768, 1920×1080, portrait, and a 200% zoom-equivalent CSS
+viewport. It checks overflow, keyboard focus, scrolling to actions, and touch
+control dimensions. See [before/after captures](../docs/issue-41/README.md).

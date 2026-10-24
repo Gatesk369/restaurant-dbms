@@ -102,13 +102,13 @@ context; it does not authorize reintroducing staff order entry.
 
 "Accurate" is made testable, not left to judgement:
 
-| Level         | Check                                                                                        | How                                                                         |
-| ------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Tokens        | Colours, type scale, radii, spacing equal the values in `design-system.md`                   | Computed-style assertions in Playwright                                     |
-| Layout        | Same grid, column widths, paddings, breakpoints (880px sidebar collapse, 1280px content max) | Pixel diff against the mock-up rendered at the same size with the same data |
-| Copy          | Every label, hint, error and toast matches the mock-up string                                | Copy-deck test (section 8)                                                  |
-| Behaviour     | Same validation rules, same enabled/disabled logic, same state machine                       | Unit tests ported from the mock-up logic                                    |
-| Accessibility | Same roles, labels, `aria-pressed`, `aria-invalid`, focus ring, target sizes                 | Role queries plus axe                                                       |
+| Level         | Check                                                                             | How                                                                         |
+| ------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Tokens        | Colours, type scale, radii, spacing equal the values in `design-system.md`        | Computed-style assertions in Playwright                                     |
+| Layout        | Responsive viewport layout (#41), 880px sidebar collapse, unscaled touch controls | Pixel diff against the mock-up rendered at the same size with the same data |
+| Copy          | Every label, hint, error and toast matches the mock-up string                     | Copy-deck test (section 8)                                                  |
+| Behaviour     | Same validation rules, same enabled/disabled logic, same state machine            | Unit tests ported from the mock-up logic                                    |
+| Accessibility | Same roles, labels, `aria-pressed`, `aria-invalid`, focus ring, target sizes      | Role queries plus axe                                                       |
 
 Tolerances: pixel diff under 0.5% of pixels per artboard, no layout shift of
 more than 1px for any element. Anti-aliasing differences are the only accepted
@@ -164,7 +164,7 @@ state; the mock-ups assume several of these.
 | D8  | Font                    | `@fontsource/lato` 400 and 700, Latin subset, self-hosted                                                    | Works offline on a kiosk; same Lato v25 glyphs as the mock-up                                                                       | One dependency                                                                       |
 | D9  | Charts                  | Hand-built DOM/CSS exactly like the mock-up                                                                  | The mock-up charts are CSS; a chart library would not reproduce them                                                                | A few components                                                                     |
 | D10 | Tests                   | Vitest + Testing Library (logic and components), Playwright (visual + e2e)                                   | Fidelity needs real-browser pixel diffs                                                                                             | CI time                                                                              |
-| D11 | Station scaling         | Fixed 1280 × 800 canvas, scaled uniformly to fit the viewport                                                | The design is landscape-only and fixed; scaling keeps proportions on any kiosk                                                      | Needs confirmation (OQ5)                                                             |
+| D11 | Station layout          | Fluid viewport layout with normal scrolling; supersedes fixed-canvas scaling (#41)                           | Keep text and touch targets usable on narrow and portrait screens                                                                   | Reflow coverage and captures in docs/issue-41                                        |
 | D12 | Role card on sign-in    | A shortcut that prefills the demo username; the server's role is authoritative                               | The API decides the role; the card only mirrors the mock-up interaction                                                             | None                                                                                 |
 | D13 | Prototype-only controls | The station's "Prototype only: move the order along" button renders only when `VITE_PROTOTYPE_CONTROLS=true` | It is a reviewer aid, not a customer feature                                                                                        | None                                                                                 |
 
@@ -656,7 +656,7 @@ artboard; every chart has its values printed and a table.
 **Mock-up:** Ordering station (1280 × 800), four states. **Data:** tables
 (G1), public menu (G5–G8), customers, my orders.
 
-The route renders `StationCanvas` (fixed 1280 × 800, scaled per D11) and
+The route renders `StationCanvas` (fluid viewport workspace after #41) and
 persists `{screen, table, guestName, category, lines, notes, orderId}` in
 `sessionStorage` so a refresh does not lose the cart. Legacy payment fields
 are discarded when loading older drafts (#38).
@@ -681,9 +681,9 @@ an error panel above the bottom bar and return the cart to the menu.
 
 **As built (Phase 6)**
 
-- `/station` is public and sits outside the staff shell. The 1280 x 800 canvas
-  is scaled uniformly to fit the window (plan D11), so a kiosk of any size
-  shows the same layout.
+- `/station` is public and sits outside the staff shell. Issue #41 replaces
+  the original 1280 × 800 scaling with responsive columns and normal vertical
+  scrolling. See [the current layout spec](design-system.md#ordering-station-workspace).
 - Opening an order calls `POST /api/customers/` once per table and keeps the
   session for "Change table" and back; a different table gets its own. The
   session token and the draft (screen, table, cart, notes, choices) live in
@@ -829,20 +829,20 @@ to 6 each end with the review gate from section 8.
 
 | #   | Task                                                                | Size | Done when                                           |
 | --- | ------------------------------------------------------------------- | ---- | --------------------------------------------------- |
-| 6.1 | Canvas, scaling, header and progress stepper                        | M    | Stepper announcements verified                      |
+| 6.1 | Responsive workspace, header and progress stepper                   | M    | Stepper announcements verified                      |
 | 6.2 | Table and Menu steps with cart, MenuCard states and placeholder art | L    | Steps 1 and 2 match                                 |
 | 6.3 | Review step and validation                                          | M    | Step 3 matches                                      |
 | 6.4 | Send, Done step, tracker polling, reset, error recovery             | M    | Step 4 matches; full order lands in the staff board |
 
 ### Phase 7: Hardening and handover
 
-| #   | Task                                                                              | Size | Done when                                    |
-| --- | --------------------------------------------------------------------------------- | ---- | -------------------------------------------- |
-| 7.1 | Keyboard and screen-reader pass, axe, contrast check                              | M    | No serious findings                          |
-| 7.2 | Responsive check at 880 / 1024 / 1360; station scaling at 1024 × 768, 1920 × 1080 | M    | No horizontal page scroll                    |
-| 7.3 | End-to-end suite on seeded dev DB                                                 | M    | Order-to-report flow green                   |
-| 7.4 | Remove interim shims for any gap that landed; update docs                         | S    | `category-fallback.ts` deleted when G5 is in |
-| 7.5 | README and run instructions; demo script                                          | S    | New teammate runs the app from docs          |
+| #   | Task                                                                                          | Size | Done when                                    |
+| --- | --------------------------------------------------------------------------------------------- | ---- | -------------------------------------------- |
+| 7.1 | Keyboard and screen-reader pass, axe, contrast check                                          | M    | No serious findings                          |
+| 7.2 | Responsive check at 880 / 1024 / 1360; station reflow at 1024 × 768, 1920 × 1080 and portrait | M    | No horizontal page scroll                    |
+| 7.3 | End-to-end suite on seeded dev DB                                                             | M    | Order-to-report flow green                   |
+| 7.4 | Remove interim shims for any gap that landed; update docs                                     | S    | `category-fallback.ts` deleted when G5 is in |
+| 7.5 | README and run instructions; demo script                                                      | S    | New teammate runs the app from docs          |
 
 **Parallel track for the backend** (can start immediately, owners to confirm):
 G1 and G2 (tables endpoint, seats), G5 to G8 (menu category, archived, image,
@@ -866,10 +866,10 @@ and G6 to be complete; Phase 6 needs G1, G5 to G8.
 | OQ2 | Add Description and Image URL fields to the Menu editor (the station needs them)?                 | Not added until design approves                                                      |
 | OQ3 | Should customers select payment during ordering?                                                  | Resolved by #38: customers submit orders; cashiers record the actual payment method. |
 | OQ4 | Should station orders appear on the staff board, and how does Kitchen see them? (design document) | They do, through the shared API, with no extra UI                                    |
-| OQ5 | Station scaling on larger kiosks and an idle reset timeout                                        | Scale to fit, 5-minute idle reset on the Done and Table steps                        |
+| OQ5 | Station scaling on larger kiosks and an idle reset timeout                                        | Responsive reflow (#41), 5-minute idle reset on the Done and Table steps             |
 | OQ6 | Seed 12 tables (ids 1–12) and 18 menu items for demos?                                            | Use whatever ids the database has                                                    |
 | OQ7 | New strings: session ended, order cancelled, locked panel body                                    | Use the wording in this plan                                                         |
-| OQ8 | Dedicated Kitchen view and portrait/phone station layout (design document)                        | Out of scope for this plan                                                           |
+| OQ8 | Dedicated Kitchen view (portrait station layout delivered in #41)                                 | Out of scope for this plan                                                           |
 
 ## 12. Definition of done
 

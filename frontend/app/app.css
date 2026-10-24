@@ -90,3 +90,127 @@
     outline-offset: 2px;
   }
 }
+
+/* Station layout follows the viewport; never transform text or touch targets. */
+.station-step {
+  min-height: calc(100dvh - 72px);
+}
+
+.station-menu {
+  grid-template-columns: 200px minmax(0, 1fr) 340px;
+  align-items: start;
+}
+
+.station-items {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.station-cart {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 1100px) {
+  .station-header {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-block: 16px;
+  }
+
+  .station-header ol {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .station-step {
+    min-height: 0;
+  }
+
+  .station-table {
+    gap: 32px;
+    padding: 24px;
+  }
+
+  .station-menu {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .station-categories {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .station-categories button {
+    width: auto;
+    min-height: 48px;
+    margin-top: 0;
+  }
+
+  .station-review-columns,
+  .station-done {
+    flex-direction: column;
+  }
+
+  .station-review-columns > section,
+  .station-done > * {
+    flex-basis: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .station-header {
+    gap: 12px;
+    padding-inline: 16px;
+  }
+
+  .station-header > span {
+    font-size: var(--text-heading);
+  }
+
+  .station-header ol {
+    justify-content: space-between;
+  }
+
+  .station-header li {
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 25%;
+  }
+
+  .station-connector {
+    display: none;
+  }
+
+  .station-step {
+    padding: 24px 16px;
+    gap: 24px;
+  }
+
+  .station-table {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .station-table > fieldset > div {
+    flex-basis: auto;
+  }
+
+  .station-tables {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .station-menu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .station-cart {
+    position: static;
+  }
+
+  .station-actions > button {
+    width: 100%;
+  }
+}

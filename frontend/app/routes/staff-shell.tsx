@@ -22,13 +22,13 @@ export default function StaffShell({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <div className="flex flex-wrap items-stretch bg-page text-forest">
+    <div className="flex min-h-dvh items-stretch bg-page max-[880px]:flex-col text-forest">
       <Sidebar staff={staff} onSignOut={signOut} />
       <main
-        className="min-w-0 flex-[1_1_640px]"
+        className="min-w-0 flex-1"
         aria-busy={navigation.state !== "idle" || revalidator.state !== "idle" || undefined}
       >
-        <div className="mx-auto box-border flex max-w-content flex-col gap-6 px-6 pt-6 pb-12">
+        <div className="box-border flex w-full flex-col gap-6 px-6 pt-6 pb-12">
           <Outlet />
         </div>
       </main>

@@ -50,8 +50,8 @@ export function MenuStep({
   onReview,
 }: MenuStepProps) {
   return (
-    <div className="box-border flex h-[728px] gap-6 p-6">
-      <nav aria-label="Menu categories" className="flex flex-[0_0_200px] flex-col gap-2">
+    <div className="station-step station-menu box-border grid flex-1 gap-6 p-6">
+      <nav aria-label="Menu categories" className="station-categories flex flex-col gap-2">
         {categories.map((name) => (
           <ToggleChip
             key={name}
@@ -69,13 +69,13 @@ export function MenuStep({
 
       <section className="flex min-w-0 flex-auto flex-col gap-3">
         <h2 className="m-0 text-panel font-normal">{category}</h2>
-        <div className="min-h-0 flex-auto overflow-y-auto pr-1">
+        <div className="flex-auto">
           {items.length === 0 ? (
             <p className="m-0 rounded-md bg-tea p-4 text-body tracking-body">
               Nothing in this category today.
             </p>
           ) : null}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="station-items grid gap-3">
             {items.map((item) => (
               <MenuCard
                 key={item.menu_item_id}
@@ -88,19 +88,22 @@ export function MenuStep({
         </div>
       </section>
 
-      <aside className="box-border flex min-h-0 flex-[0_0_340px] flex-col gap-3 rounded-md border border-tea p-4">
+      <aside className="station-cart box-border flex min-w-0 flex-col gap-3 rounded-md border border-tea p-4">
         <div>
           <h2 className="m-0 text-panel font-normal">Your order</h2>
           <p className="m-0 text-label tracking-caption text-moss">{orderFor}</p>
         </div>
-        <div className="min-h-0 flex-auto overflow-y-auto">
+        <div className="flex-auto">
           {cart.length === 0 ? (
             <p className="m-0 rounded-md bg-tea p-4 text-body tracking-body">
               Nothing yet. Tap a dish or drink to add it.
             </p>
           ) : null}
           {cart.map((line) => (
-            <div key={line.menuItemId} className="flex items-center gap-2 border-b border-tea py-2">
+            <div
+              key={line.menuItemId}
+              className="flex flex-wrap items-center gap-2 border-b border-tea py-2"
+            >
               <div className="min-w-0 flex-auto">
                 <div className="text-body font-bold tracking-bold">{line.name}</div>
                 <div className="text-label tracking-caption text-moss">

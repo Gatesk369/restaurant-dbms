@@ -15,7 +15,7 @@ interface TableStepProps {
   onStart: () => void;
 }
 
-/** Step 1: an optional name and the 4 x 3 table grid. */
+/** Step 1: an optional name and a table grid that reflows with the viewport. */
 export function TableStep({
   tables,
   table,
@@ -27,9 +27,9 @@ export function TableStep({
   onStart,
 }: TableStepProps) {
   return (
-    <div className="box-border flex h-[728px] items-center gap-16 px-12 py-8">
+    <div className="station-step station-table box-border flex flex-1 items-center gap-16 px-12 py-8">
       <fieldset disabled={starting} className="contents">
-        <div className="flex min-w-0 flex-[0_0_440px] flex-col gap-6">
+        <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-6">
           <div>
             <h1 className="m-0 text-hero font-normal">Order from your table</h1>
             <p className="mt-2 mb-0 text-heading tracking-lede text-moss">
@@ -66,7 +66,7 @@ export function TableStep({
 
         <div className="flex min-w-0 flex-auto flex-col gap-3">
           <h2 className="m-0 text-panel font-normal">Choose your table</h2>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="station-tables grid grid-cols-4 gap-3">
             {tables.map((t) => (
               <TableTile
                 key={t.table_id}
