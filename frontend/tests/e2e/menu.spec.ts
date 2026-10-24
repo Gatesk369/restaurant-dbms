@@ -21,7 +21,7 @@ async function openMenu(
   if (persona.role === "manager") {
     await expect(page.getByRole("heading", { level: 1, name: "Menu management" })).toBeVisible();
   } else {
-    await expect(page).toHaveURL(/\/orders$/);
+    await expect(page).toHaveURL(persona.role === "cashier" ? "/payments" : "/orders");
   }
   await fontsReady(page);
   return api;
@@ -317,7 +317,7 @@ test.describe("while the API has no category or archived column", () => {
 test.describe("access", () => {
   test("redirects a cashier before loading protected data", async ({ page }) => {
     const api = await openMenu(page, FULL, PERSONAS.cashier);
-    await expect(page).toHaveURL(/\/orders$/);
+    await expect(page).toHaveURL("/payments");
     await expect(page.getByText(/Locked for/)).toHaveCount(0);
     expect(api.callsTo("GET", "/api/staff/menu/")).toHaveLength(0);
   });

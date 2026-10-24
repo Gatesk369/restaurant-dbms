@@ -26,7 +26,7 @@ async function openReports(
   if (persona.role === "manager") {
     await expect(page.getByRole("heading", { level: 1, name: "Reports" })).toBeVisible();
   } else {
-    await expect(page).toHaveURL(/\/orders$/);
+    await expect(page).toHaveURL(persona.role === "cashier" ? "/payments" : "/orders");
   }
   await fontsReady(page);
   return api;
@@ -310,7 +310,7 @@ test.describe("table turnover columns", () => {
 test.describe("access", () => {
   test("redirects a cashier before loading protected data", async ({ page }) => {
     const api = await openReports(page, FULL, PERSONAS.cashier);
-    await expect(page).toHaveURL(/\/orders$/);
+    await expect(page).toHaveURL("/payments");
     await expect(page.getByText(/Locked for/)).toHaveCount(0);
     expect(api.callsTo("GET", "/api/staff/reports/daily-sales/")).toHaveLength(0);
   });

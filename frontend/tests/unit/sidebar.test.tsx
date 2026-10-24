@@ -4,8 +4,9 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 
 import { Sidebar } from "~/components/staff/Sidebar";
-import { requireStaffSession, requireStaffScreen } from "~/lib/auth-guard";
-import { setStaffSession } from "~/lib/session";
+import { requireStaffSession, requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
+import { getStaffSession, setStaffSession } from "~/lib/session";
+import { ApiError } from "~/lib/api/client";
 import { SCREENS, canAccess } from "~/lib/access";
 import { ROLES, type Staff } from "~/lib/api/types";
 
@@ -101,9 +102,26 @@ describe("requireStaffScreen", () => {
             thrown = error;
           }
           expect(thrown).toBeInstanceOf(Response);
-          expect((thrown as Response).headers.get("Location")).toBe("/orders");
+          expect((thrown as Response).headers.get("Location")).toBe(
+            role === "cashier" ? "/payments" : "/orders",
+          );
         }
       });
     }
   }
+});
+
+describe("expired staff sessions", () => {
+  it("clears a rejected session before redirecting to sign-in", () => {
+    setStaffSession({ token: "expired", staff: { staff_id: 1, username: "u", role: "cashier" } });
+    let thrown: unknown;
+    try {
+      rethrowApiError(new ApiError(401, "Expired"));
+    } catch (error) {
+      thrown = error;
+    }
+    expect(getStaffSession()).toBeNull();
+    expect(thrown).toBeInstanceOf(Response);
+    expect((thrown as Response).headers.get("Location")).toBe("/?reason=expired");
+  });
 });

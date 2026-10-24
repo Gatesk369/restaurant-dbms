@@ -8,16 +8,28 @@ and [`../docs/design-system.md`](../docs/design-system.md).
 
 ## Role-based navigation
 
-Navigation, startup tiles, and report links use the authenticated staff role.
+Navigation and report links use the authenticated staff role.
 Cashiers see Orders and Payments; wait staff and kitchen staff see Orders;
 managers see Orders, Payments, Menu management, and Reports. Unavailable
 screens are omitted rather than shown as locked cards. Direct visits to a
-forbidden screen redirect to the first permitted destination (currently Orders)
-before its loader requests protected data. API authorization remains independent.
+forbidden screen redirect to the role's default workspace before its loader
+requests protected data. API authorization remains independent.
 
 Managers can review served orders in Payments, while payment-entry controls
 remain exclusive to cashiers. Cashier receipts offer the next order or a return
 to Orders, without a link to manager-only reports.
+
+## Direct workspace entry
+
+After sign-in, cashiers enter Payments; wait staff and kitchen staff enter
+Orders; managers enter Orders and can use the sidebar for other permitted
+screens. Visiting `/` with a stored session uses the same default. The startup
+menu and its tiles have been removed (#37).
+
+The authenticated API role determines the destination, regardless of the role
+card selected or URL query parameters. A rejected staff session is cleared before
+returning to sign-in with an expiry message, preventing redirect loops. Sign-out
+remains in the staff sidebar and clears the session and payment tally.
 
 ## Ordering and staff responsibilities
 

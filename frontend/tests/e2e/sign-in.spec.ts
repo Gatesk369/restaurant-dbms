@@ -1,12 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { expectMatchesReference } from "../visual/compare";
 import { FakeApi } from "./fake-api";
-import { PERSONAS, fontsReady, loginResponse, mockApi } from "./helpers";
+import { PERSONAS, fontsReady, loginResponse, mockApi, signInAs } from "./helpers";
 
 test.use({ viewport: { width: 1360, height: 780 } });
-
-const ARTBOARD = { x: 0, y: 0, width: 1360, height: 780 };
 
 async function open(page: Page) {
   await page.goto("/");
@@ -25,22 +22,24 @@ async function blur(page: Page) {
 }
 
 test.describe("sign-in form", () => {
-  test("matches the mock-up artboard", async ({ page }) => {
+  test("matches the direct-entry form baseline", async ({ page }) => {
     await open(page);
     // The mock-up opens with the Cashier demo account typed in.
     await fill(page, "nakato.sarah", "secret123");
     await blur(page);
-    await expectMatchesReference(page, "staff-sign-in", ARTBOARD);
+    await page.mouse.move(0, 0);
+    await expect(page).toHaveScreenshot("staff-sign-in.png", { animations: "disabled" });
   });
 
-  test("matches the mock-up error state", async ({ page }) => {
+  test("matches the direct-entry error baseline", async ({ page }) => {
     await open(page);
     await page.getByRole("radio", { name: /^Manager/ }).check({ force: true });
     await fill(page, "tumusiime.ruth", "abc");
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("alert")).toBeVisible();
     await blur(page);
-    await expectMatchesReference(page, "staff-sign-in-error", ARTBOARD);
+    await page.mouse.move(0, 0);
+    await expect(page).toHaveScreenshot("staff-sign-in-error.png", { animations: "disabled" });
   });
 
   test("uses the design-system metrics", async ({ page }) => {
@@ -96,108 +95,78 @@ test.describe("sign-in form", () => {
   });
 });
 
-test.describe("startup menu", () => {
+test.describe("direct workspace entry", () => {
   const roles = [
-    {
-      persona: PERSONAS.cashier,
-      card: /^Cashier/,
-      slug: "cashier",
-      links: ["Orders", "Payments"],
-      locked: ["Menu management", "Reports"],
-      label: "Cashier",
-    },
-    {
-      persona: PERSONAS.waiter,
-      card: /^Wait Staff/,
-      slug: "wait-staff",
-      links: ["Orders"],
-      locked: ["Payments", "Menu management", "Reports"],
-      label: "Wait Staff",
-    },
-    {
-      persona: PERSONAS.kitchen,
-      card: /^Kitchen Staff/,
-      slug: "kitchen",
-      links: ["Orders"],
-      locked: ["Payments", "Menu management", "Reports"],
-      label: "Kitchen Staff",
-    },
-    {
-      persona: PERSONAS.manager,
-      card: /^Manager/,
-      slug: "manager",
-      links: ["Orders", "Payments", "Menu management", "Reports"],
-      locked: [],
-      label: "Manager",
-    },
+    { persona: PERSONAS.cashier, card: /^Cashier/, path: "/payments", heading: "Payments" },
+    { persona: PERSONAS.waiter, card: /^Wait Staff/, path: "/orders", heading: "Orders" },
+    { persona: PERSONAS.kitchen, card: /^Kitchen Staff/, path: "/orders", heading: "Orders" },
+    { persona: PERSONAS.manager, card: /^Manager/, path: "/orders", heading: "Orders" },
   ] as const;
 
-  for (const { persona, card, slug, links, locked, label } of roles) {
-    test(`${label}: tiles and artboard`, async ({ page }) => {
+  for (const { persona, card, path, heading } of roles) {
+    test(`${persona.role} signs in directly to ${path}`, async ({ page }) => {
+      await new FakeApi({ tablesEndpoint: true }).install(page);
       await mockApi(page, "/api/auth/login/", () => ({ body: loginResponse(persona) }));
       await open(page);
       await page.getByRole("radio", { name: card }).check({ force: true });
       await fill(page, persona.username, "secret123");
       await page.getByRole("button", { name: "Sign in" }).click();
+      await expect(page).toHaveURL(path);
+      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Startup menu" })).toHaveCount(0);
+      await expect(page.locator("aside").first().getByText(persona.display_name)).toBeVisible();
+    });
 
-      await expect(page.getByRole("heading", { level: 2, name: "Startup menu" })).toBeVisible();
-      await expect(page.getByText(`Signed in as ${persona.display_name}, ${label}`)).toBeVisible();
+    test(`${persona.role} returns from root to ${path} with its session`, async ({ page }) => {
+      await new FakeApi({ tablesEndpoint: true }).install(page);
+      await signInAs(page, persona);
+      await page.goto("/?next=/reports");
+      await expect(page).toHaveURL(path);
+      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+      await page.reload();
+      await expect(page).toHaveURL(path);
+      await expect(page.getByRole("heading", { name: "Startup menu" })).toHaveCount(0);
+    });
 
-      const main = page.locator("main");
-      for (const name of links) {
-        await expect(main.getByRole("link", { name: new RegExp(`^${name}`) })).toBeVisible();
-      }
-      await expect(main.getByRole("link")).toHaveCount(links.length);
-      for (const name of locked) {
-        await expect(main.getByText(name, { exact: true })).toHaveCount(0);
-      }
-
-      await expect(main.getByRole("link", { name: /^Orders/ })).toContainText(
-        "Follow customer orders from assignment through preparation and service.",
-      );
-      await expect(
-        main.getByText("Create orders and follow them from pending to served."),
-      ).toHaveCount(0);
-      await fontsReady(page);
-      await blur(page);
-      await expect(main.getByText(/Locked for/)).toHaveCount(0);
-      await page.mouse.move(0, 0);
-      // Issue #35 deliberately changed the Orders tile copy and its wrapping.
-      // Keep the original mock-ups intact and compare the revised UI separately.
-      await expect(page).toHaveScreenshot(`staff-startup-${slug}.png`, {
-        animations: "disabled",
-      });
+    test(`${persona.role} expired session reaches sign-in without a loop`, async ({ page }) => {
+      const api = new FakeApi({ tablesEndpoint: true, expired: true });
+      await api.install(page);
+      await signInAs(page, persona);
+      await page.goto("/");
+      await expect(page).toHaveURL(/\/\?reason=expired$/);
+      await expect(page.getByRole("heading", { level: 2, name: "Sign in" })).toBeVisible();
+      await expect(page.getByText("Your session has ended. Sign in again.")).toBeVisible();
+      expect(await page.evaluate(() => sessionStorage.getItem("rdbms.staff"))).toBeNull();
+      expect(api.callsTo("GET", "/api/staff/orders/")).toHaveLength(1);
     });
   }
 
-  test("keeps the session across a reload and signs out from the menu", async ({ page }) => {
+  test("uses the authenticated role instead of a selected role or forbidden return URL", async ({
+    page,
+  }) => {
+    await new FakeApi({ tablesEndpoint: true }).install(page);
     await mockApi(page, "/api/auth/login/", () => ({ body: loginResponse(PERSONAS.cashier) }));
-    await open(page);
-    await fill(page, "nakato.sarah", "secret123");
+    await page.goto("/?next=/reports&returnTo=https://example.com");
+    await page.getByRole("radio", { name: /^Manager/ }).check({ force: true });
+    await fill(page, PERSONAS.cashier.username, "secret123");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("heading", { name: "Startup menu" })).toBeVisible();
-
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Startup menu" })).toBeVisible();
-
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await expect(page.getByRole("heading", { level: 2, name: "Sign in" })).toBeVisible();
-    expect(await page.evaluate(() => sessionStorage.getItem("rdbms.staff"))).toBeNull();
+    await expect(page).toHaveURL("/payments");
+    await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
   });
 
-  test("continues into the staff shell as the signed-in user", async ({ page }) => {
-    // Registered first so the more specific login route below wins.
+  test("signs out from the workspace and stays signed out after a reload", async ({ page }) => {
     await new FakeApi({ tablesEndpoint: true }).install(page);
-    await mockApi(page, "/api/auth/login/", () => ({ body: loginResponse(PERSONAS.waiter) }));
+    await mockApi(page, "/api/auth/login/", () => ({ body: loginResponse(PERSONAS.cashier) }));
     await open(page);
-    await fill(page, "okello.peter", "secret123");
+    await fill(page, PERSONAS.cashier.username, "secret123");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await page.getByRole("link", { name: /^Orders/ }).click();
-
-    await expect(page).toHaveURL(/\/orders$/);
-    const sidebar = page.locator("aside").first();
-    await expect(sidebar.getByText("Okello Peter")).toBeVisible();
-    await expect(sidebar.getByText("Wait Staff")).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1, name: "Orders" })).toBeVisible();
+    await expect(page).toHaveURL("/payments");
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL("/");
+    expect(await page.evaluate(() => sessionStorage.getItem("rdbms.staff"))).toBeNull();
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 2, name: "Sign in" })).toBeVisible();
   });
 });
