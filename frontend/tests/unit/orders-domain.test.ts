@@ -105,6 +105,13 @@ describe("nextAction", () => {
     });
   });
 
+  it("never lets the kitchen serve a ready order", () => {
+    expect(nextAction("kitchen", order("ready"), 1004)).toEqual({
+      kind: "note",
+      text: "Ready to serve",
+    });
+  });
+
   it("never offers kitchen buttons to cashiers", () => {
     expect(nextAction("cashier", order("confirmed"), 1).kind).toBe("note");
     expect(nextAction("cashier", order("preparing"), 1).kind).toBe("note");

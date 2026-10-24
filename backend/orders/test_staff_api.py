@@ -85,12 +85,16 @@ class StaffOrderApiTests(TestCase):
 
     # --- status changes ---
 
-    def test_kitchen_walks_order_to_served(self):
+    def test_kitchen_prepares_but_assigned_waiter_serves(self):
         self.as_(self.kitchen)
-        for status in ("preparing", "ready", "served"):
+        for status in ("preparing", "ready"):
             r = self.move(status)
             self.assertEqual(r.status_code, 200)
             self.assertEqual(r.data["order_status"], status)
+        self.assertEqual(self.move("served").status_code, 403)
+        self.assertEqual(Order.get(self.oid)["order_status"], "ready")
+        self.as_(self.waiter)
+        self.assertEqual(self.move("served").status_code, 200)
 
     def test_cannot_skip_or_go_backwards(self):
         self.as_(self.kitchen)
@@ -148,3 +152,77 @@ class StaffOrderApiTests(TestCase):
         self.assertEqual(self.assign("abc").status_code, 400)
         self.as_(self.kitchen)
         self.assertEqual(self.assign(self.waiter["staff_id"]).status_code, 403)
+
+    def test_staff_cannot_create_orders_or_use_customer_endpoint(self):
+        for staff in (self.waiter, self.manager, self.kitchen, self.cashier):
+            with self.subTest(role=staff["role"]):
+                self.as_(staff)
+                payload = {"table_id": self.table["table_id"], "items": []}
+                self.assertEqual(
+                    self.client.post(
+                        "/api/staff/orders/", payload, format="json"
+                    ).status_code,
+                    405,
+                )
+                self.assertEqual(
+                    self.client.post(
+                        "/api/my/orders/", payload, format="json"
+                    ).status_code,
+                    401,
+                )
+
+    def test_waiter_cannot_discover_other_orders_by_status_filter(self):
+        other = self.second_waiter()
+        self.as_(other)
+        for status in ("confirmed", "preparing", "ready", "served", "cancelled"):
+            Order.update(self.oid, order_status=status)
+            r = self.client.get("/api/staff/orders/", {"status": status})
+            self.assertEqual(r.data, [])
+            self.assertEqual(self.move("served").status_code, 403)
+
+    def test_manager_retains_service_override(self):
+        Order.update(self.oid, order_status="ready")
+        self.as_(self.manager)
+        self.assertEqual(self.move("served").status_code, 200)
+
+    def test_customer_order_flows_through_kitchen_waiter_and_cashier(self):
+        table = make_table()
+        customer = make_customer(table["table_id"])
+        waiter = self.second_waiter()
+        item = make_menu_item("Lunch", 12000)
+        guest = APIClient()
+        placed = guest.post(
+            "/api/my/orders/",
+            {
+                "items": [
+                    {
+                        "menu_item_id": item["menu_item_id"],
+                        "quantity": 1,
+                        "special_instructions": "No onions",
+                    }
+                ]
+            },
+            format="json",
+            HTTP_X_SESSION_TOKEN=customer["session_token"],
+        )
+        self.assertEqual(placed.status_code, 201)
+        oid = placed.data["order_id"]
+        self.assertEqual(Order.get(oid)["staff_id"], waiter["staff_id"])
+        self.assertEqual(placed.data["order_status"], "confirmed")
+        self.as_(waiter)
+        queue = self.client.get("/api/staff/orders/").data
+        self.assertEqual([o["order_id"] for o in queue], [oid])
+        self.assertEqual(queue[0]["items"][0]["special_instructions"], "No onions")
+        self.as_(self.kitchen)
+        self.assertEqual(self.move("preparing", oid).status_code, 200)
+        self.assertEqual(self.move("ready", oid).status_code, 200)
+        self.assertEqual(self.move("served", oid).status_code, 403)
+        self.as_(waiter)
+        self.assertEqual(self.move("served", oid).status_code, 200)
+        self.as_(self.cashier)
+        paid = self.client.post(
+            f"/api/staff/orders/{oid}/pay/", {"payment_method": "Cash"}, format="json"
+        )
+        self.assertEqual(paid.status_code, 201)
+        self.assertEqual(paid.data["payment"]["amount"], 12000)
+        self.assertTrue(Table.get(table["table_id"])["free_status"])

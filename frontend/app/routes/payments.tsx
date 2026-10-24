@@ -229,7 +229,7 @@ export default function Payments() {
             <Panel pad="lg">
               <h2 className="m-0 text-panel font-normal">All served orders are paid</h2>
               <p className="m-0 text-body tracking-body text-moss">
-                New orders show up here once the kitchen marks them served.
+                New orders show up here once the assigned waiter marks them served.
               </p>
               <ButtonLink to={FIRST_ORDER_LINK} variant="tonal" className="self-start">
                 Go to orders
