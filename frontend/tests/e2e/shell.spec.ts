@@ -51,12 +51,12 @@ test.describe("staff shell", () => {
     await expect(other).toHaveCSS("background-color", "rgb(69, 100, 74)");
   });
 
-  test("keeps the sidebar sticky and the content at most 1280px wide", async ({ page }) => {
+  test("keeps the sidebar sticky and uses the remaining viewport width", async ({ page }) => {
     await signInAs(page, PERSONAS.waiter);
     await page.goto("/orders");
     await expect(page.locator("aside").first().locator("> div")).toHaveCSS("position", "sticky");
     const content = page.locator("main, aside ~ div > div").first();
-    expect((await content.boundingBox())!.width).toBeLessThanOrEqual(1280);
+    expect((await content.boundingBox())!.width).toBe(1360 - 240);
     await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("font-size", "32px");
   });
 

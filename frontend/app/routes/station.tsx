@@ -227,7 +227,7 @@ export default function Station() {
     <StationCanvas>
       <StationHeader current={SCREEN_INDEX[draft.screen]} onCallWaiter={callWaiter} />
 
-      <div className="relative h-[728px] flex-none">
+      <div className="relative flex flex-1 flex-col">
         {toast ? <StationToast>{toast}</StationToast> : null}
 
         {draft.screen === "start" ? (

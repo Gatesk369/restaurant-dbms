@@ -8,10 +8,10 @@ interface StationHeaderProps {
   onCallWaiter: () => void;
 }
 
-/** 72px forest bar: wordmark, four-step progress, Call a waiter. */
+/** Wrapping forest bar: wordmark, four-step progress, Call a waiter. */
 export function StationHeader({ current, onCallWaiter }: StationHeaderProps) {
   return (
-    <header className="on-forest box-border flex h-18 flex-none items-center justify-between gap-6 bg-forest px-6 text-page">
+    <header className="station-header on-forest box-border flex min-h-18 flex-none items-center justify-between gap-6 bg-forest px-6 text-page">
       <span className="text-wordmark">Restaurant DBMS</span>
 
       <ol aria-label="Order progress" className="m-0 flex list-none items-center p-0">
@@ -33,7 +33,7 @@ export function StationHeader({ current, onCallWaiter }: StationHeaderProps) {
               {i > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="mx-2 block h-1 w-12 rounded-[2px]"
+                  className="station-connector mx-2 block h-1 w-12 rounded-[2px]"
                   style={{
                     background: i <= current ? "var(--color-tea)" : "var(--color-moss)",
                   }}

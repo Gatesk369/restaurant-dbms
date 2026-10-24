@@ -1,12 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { expectMatchesReference } from "../visual/compare";
 import { FakeApi, type FakeOptions } from "./fake-api";
 import { PERSONAS, fontsReady, signInAs } from "./helpers";
 
 test.use({ viewport: { width: 1280, height: 800 } });
-
-const CANVAS = { x: 0, y: 0, width: 1280, height: 800 };
 
 /** The API as it will be once backend issues #12 and #13 are done. */
 const FULL: FakeOptions = {
@@ -54,23 +51,23 @@ async function toReview(page: Page) {
   await expect(page.getByRole("heading", { name: "Check your order" })).toBeVisible();
 }
 
-test.describe("fidelity against the mock-up", () => {
+test.describe("responsive ordering appearance", () => {
   test("walks the four steps with cashier-only payment selection", async ({ page }) => {
     await openStation(page);
     await settle(page);
-    await expectMatchesReference(page, "station-1-table", CANVAS);
+    await expect(page).toHaveScreenshot("responsive-station-1-table.png");
 
     await toMenu(page);
     await expect(page.getByRole("button", { name: "Grilled Goat Ribs, sold out" })).toBeDisabled();
     await settle(page);
-    await expectMatchesReference(page, "station-2-menu-empty", CANVAS);
+    await expect(page).toHaveScreenshot("responsive-station-2-menu-empty.png");
 
     await add(page, "Matoke & Beef Stew").click();
     await add(page, "Chicken Luwombo").click();
     await add(page, "Matoke & Beef Stew").click();
     await expect(page.getByText("×2")).toBeVisible();
     await settle(page);
-    await expectMatchesReference(page, "station-2-menu-cart", CANVAS);
+    await expect(page).toHaveScreenshot("responsive-station-2-menu-cart.png");
 
     await page.getByRole("button", { name: "Review order" }).click();
     await expect(page.getByRole("heading", { name: "Check your order" })).toBeVisible();
@@ -436,15 +433,15 @@ test.describe("the header", () => {
 });
 
 test.describe("the canvas", () => {
-  test("scales to fit a smaller screen and still works", async ({ page }) => {
+  test("reflows on a smaller screen without shrinking controls", async ({ page }) => {
     await page.setViewportSize({ width: 640, height: 400 });
     await openStation(page);
-    const header = await page.locator("header").boundingBox();
-    expect(header!.width).toBeCloseTo(640, 0);
-    expect(header!.height).toBeCloseTo(36, 0);
+    expect((await page.locator("header").boundingBox())!.width).toBe(640);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("font-size", "36px");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       640,
     );
+    expect((await table(page, 6).boundingBox())!.height).toBeGreaterThanOrEqual(96);
     await table(page, 6).click();
     await expect(start(page)).toBeEnabled();
   });
