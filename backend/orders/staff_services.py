@@ -10,7 +10,8 @@ OPEN = ("confirmed", "preparing", "ready")
 NEXT_STATUS = {"confirmed": "preparing", "preparing": "ready", "ready": "served"}
 
 BASE = """SELECT o.order_id, o.table_id, o.order_status, o.order_time,
-                 o.staff_id, s.username AS waiter
+                 o.staff_id, s.username AS waiter,
+                 EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.order_id) AS paid
             FROM orders o LEFT JOIN staff s ON s.staff_id = o.staff_id"""
 
 

@@ -47,7 +47,7 @@ export function meta({}: Route.MetaArgs) {
 
 const POLL_MS = 10_000;
 
-export async function clientLoader() {
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const { staff } = requireStaffScreen("payments");
   try {
     // A cashier's queue is served-and-unpaid on the server; a manager's is not.

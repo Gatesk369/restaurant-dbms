@@ -13,4 +13,5 @@ urlpatterns = [
     ),
     path("staff/reports/table-turnover/", report_views.TableTurnoverView.as_view()),
     path("staff/reports/payment-methods/", report_views.PaymentMethodsView.as_view()),
+    path("staff/reports/payment-history/", report_views.PaymentHistoryView.as_view()),
 ]

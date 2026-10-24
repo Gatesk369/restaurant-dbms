@@ -159,6 +159,11 @@ function MenuCard({ item, quantity, onAdd }: MenuCardProps) {
     >
       <img
         src={item.image_url || placeholderImage(item.item_name)}
+        onError={(event) => {
+          const image = event.currentTarget;
+          const fallback = placeholderImage(item.item_name);
+          if (image.src !== fallback) image.src = fallback;
+        }}
         alt=""
         width={240}
         height={96}

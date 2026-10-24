@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLoaderData, useRevalidator } from "react-router";
 
 import type { Route } from "./+types/menu";
-import { MenuEditor, MenuEditorPlaceholder } from "~/components/staff/MenuEditor";
+import { MenuEditor } from "~/components/staff/MenuEditor";
 import { MenuList } from "~/components/staff/MenuList";
 import { PageHeader } from "~/components/staff/PageHeader";
 import { Button } from "~/components/ui/Button";
@@ -63,6 +63,8 @@ export default function Menu() {
   const [formCategory, setFormCategory] = useState<MenuCategory>("Mains");
   const [price, setPrice] = useState("");
   const [available, setAvailable] = useState(true);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrlError, setImageUrlError] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
 
   const [toast, setToast] = useState("");
@@ -84,6 +86,8 @@ export default function Menu() {
     setFormCategory("Mains");
     setPrice("");
     setAvailable(true);
+    setImageUrl("");
+    setImageUrlError(null);
     setTried(false);
     setError(null);
     setToast("");
@@ -96,6 +100,8 @@ export default function Menu() {
     setFormCategory(categoryOf(item) ?? "Mains");
     setPrice(String(item.price));
     setAvailable(item.availability_status);
+    setImageUrl(item.image_url ?? "");
+    setImageUrlError(null);
     setTried(false);
     setError(null);
     setToast("");
@@ -117,6 +123,7 @@ export default function Menu() {
       item_name: trimmed,
       price: Number.parseInt(price.trim(), 10),
       availability_status: available,
+      image_url: imageUrl.trim() || null,
       category: formCategory,
     };
     try {
@@ -131,7 +138,11 @@ export default function Menu() {
       setTried(false);
       await revalidator.revalidate();
     } catch (failure) {
-      setError(messageOf(failure));
+      if (failure instanceof ApiError && failure.fields.image_url) {
+        setImageUrlError(failure.fields.image_url);
+      } else {
+        setError(messageOf(failure));
+      }
     } finally {
       setSaving(false);
     }
@@ -160,6 +171,41 @@ export default function Menu() {
     }
   }
 
+  function cancelEdit() {
+    setEditing(null);
+    setTried(false);
+    setError(null);
+    setImageUrlError(null);
+  }
+
+  const editor = editing === null ? null : (
+    <MenuEditor
+      title={editing === "new" ? "Add item" : `Edit ${menuItemNumber(editing)}`}
+      name={name}
+      onName={setName}
+      category={formCategory}
+      onCategory={setFormCategory}
+      price={price}
+      onPrice={(value) => setPrice(value.replace(/[^0-9-]/g, ""))}
+      available={available}
+      onAvailable={setAvailable}
+      imageUrl={imageUrl}
+      onImageUrl={(value) => {
+        setImageUrl(value);
+        setImageUrlError(null);
+      }}
+      imageUrlError={imageUrlError}
+      nameInvalid={nameInvalid}
+      priceInvalid={priceInvalid}
+      categoryNotSaved={!features.category}
+      saving={saving}
+      disabled={busyId !== null}
+      error={error}
+      onSubmit={() => void save()}
+      onCancel={cancelEdit}
+    />
+  );
+
   return (
     <>
       <PageHeader title={screen.title} subtitle={screen.subtitle}>
@@ -170,6 +216,7 @@ export default function Menu() {
       </PageHeader>
 
       {toast ? <StatusMessage>{toast}</StatusMessage> : null}
+      {error && editing === null ? <FieldError>{error}</FieldError> : null}
 
       <div className="flex flex-wrap items-start gap-6">
         <MenuList
@@ -190,37 +237,38 @@ export default function Menu() {
           onToggleArchive={(item) => void toggleArchive(item)}
         />
 
-        <aside className="min-w-0 max-w-full flex-[1_1_340px]">
-          {editing === null ? (
-            <MenuEditorPlaceholder />
-          ) : (
-            <MenuEditor
-              title={editing === "new" ? "Add item" : `Edit ${menuItemNumber(editing)}`}
-              name={name}
-              onName={setName}
-              category={formCategory}
-              onCategory={setFormCategory}
-              price={price}
-              onPrice={(value) => setPrice(value.replace(/[^0-9-]/g, ""))}
-              available={available}
-              onAvailable={setAvailable}
-              nameInvalid={nameInvalid}
-              priceInvalid={priceInvalid}
-              categoryNotSaved={!features.category}
-              saving={saving}
-              disabled={busyId !== null}
-              error={error}
-              onSubmit={() => void save()}
-              onCancel={() => {
-                setEditing(null);
-                setTried(false);
-                setError(null);
-              }}
-            />
-          )}
-          {editing === null && error ? <FieldError className="mt-3">{error}</FieldError> : null}
-        </aside>
       </div>
+      {editing !== null ? (
+        <MenuEditorDialog onClose={cancelEdit}>{editor}</MenuEditorDialog>
+      ) : null}
     </>
+  );
+}
+
+function MenuEditorDialog({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    return () => {
+      if (dialog?.open) dialog.close();
+    };
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-label="Menu item editor"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      className="m-auto max-h-[90dvh] w-[min(94vw,440px)] overflow-y-auto rounded-md border-0 bg-page p-0 shadow-xl backdrop:bg-forest/60"
+    >
+      {children}
+    </dialog>
   );
 }

@@ -4,16 +4,20 @@ import { useLoaderData, useRevalidator } from "react-router";
 import type { Route } from "./+types/orders";
 import { ActiveOrders } from "~/components/staff/ActiveOrders";
 import { PageHeader } from "~/components/staff/PageHeader";
+import { PaidOrderHistory } from "~/components/staff/PaidOrderHistory";
+import { ButtonLink } from "~/components/ui/Button";
 import { FieldError } from "~/components/ui/Field";
+import { Panel } from "~/components/ui/Panel";
 import { StatusMessage } from "~/components/ui/Toast";
 import { getScreen } from "~/lib/access";
 import { ApiError } from "~/lib/api/client";
 import { changeOrderStatus, listStaffOrders } from "~/lib/api/orders";
+import { loadPaymentHistory } from "~/lib/api/reports";
 import type { Order, OrderStatus } from "~/lib/api/types";
 import { requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
 import { isActive, nextAction, statusLabel, type Filter } from "~/lib/domain/order-status";
 import { usePoll } from "~/lib/hooks/use-poll";
-import { isSameKampalaDay } from "~/lib/time";
+import { isSameKampalaDay, kampalaDate } from "~/lib/time";
 
 export const handle = { screen: "orders" } as const;
 const screen = getScreen("orders");
@@ -30,14 +34,18 @@ export async function clientLoader() {
     // The API scopes wait staff to assigned orders, kitchen to open orders,
     // and cashiers to served, unpaid orders. Managers can see the whole board.
     const orders = await listStaffOrders(BOARD_STATUSES);
-    return { staff, orders };
+    const today = kampalaDate();
+    const todayHistory = staff.role === "manager"
+      ? await loadPaymentHistory({ from: today, to: today }, 0, 10)
+      : null;
+    return { staff, orders, todayHistory, today };
   } catch (error) {
     return rethrowApiError(error);
   }
 }
 
 export default function Orders() {
-  const { staff, orders } = useLoaderData<typeof clientLoader>();
+  const { staff, orders, todayHistory, today } = useLoaderData<typeof clientLoader>();
   const revalidator = useRevalidator();
   const [filter, setFilter] = useState<Filter>("All");
   const [toast, setToast] = useState("");
@@ -101,6 +109,19 @@ export default function Orders() {
         busyOrderId={busyOrderId}
         onAdvance={(order, to) => void advance(order, to)}
       />
+      {staff.role === "manager" && todayHistory ? (
+        <>
+          <PaidOrderHistory page={todayHistory} title="Paid orders today" compact />
+          <Panel pad="md" className="mt-3">
+            <p className="m-0 text-body tracking-body">
+              Showing paid orders for {today}. View the full order history and choose any date range in Reports.
+            </p>
+            <ButtonLink to="/reports#history" variant="tonal" className="self-start">
+              View full history in reports
+            </ButtonLink>
+          </Panel>
+        </>
+      ) : null}
     </>
   );
 }

@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 
 import type { Route } from "./+types/reports";
 import { PaymentDonut } from "~/components/charts/PaymentDonut";
 import { RevenueBars } from "~/components/charts/RevenueBars";
 import { PageHeader } from "~/components/staff/PageHeader";
+import { PaidOrderHistory } from "~/components/staff/PaidOrderHistory";
 import {
   SalesPanel,
   SummaryStrip,
@@ -12,13 +13,13 @@ import {
   TurnoverPanel,
   WaiterPanel,
 } from "~/components/staff/ReportPanels";
-import { ToggleChip, ToggleGroup } from "~/components/ui/Chip";
+import { Button } from "~/components/ui/Button";
 import { Panel, PanelHeading } from "~/components/ui/Panel";
 import { getScreen } from "~/lib/access";
-import { loadReports } from "~/lib/api/reports";
+import { loadPaymentHistory, loadReports } from "~/lib/api/reports";
 import { requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
 import {
-  RANGES,
+  calendarMonthFor,
   dailyPeriods,
   parseRange,
   rangeFor,
@@ -40,9 +41,23 @@ export function meta({}: Route.MetaArgs) {
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   requireStaffScreen("reports");
-  const range: RangeKey = parseRange(new URL(request.url).searchParams.get("range"));
+  const params = new URL(request.url).searchParams;
+  const requestedPreset = params.get("range");
+  const range: RangeKey = parseRange(requestedPreset);
+  const defaults = rangeFor(range, kampalaDate());
+  const from = params.get("from") || defaults.from;
+  const to = params.get("to") || defaults.to;
+  const custom = !requestedPreset && Boolean(params.get("from") || params.get("to"));
+  const offset = Math.max(0, Number(params.get("offset")) || 0);
+  const days = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
+  const periodMode: RangeKey = custom && days > 14 ? "month" : "week";
   try {
-    return { range, bundle: await loadReports(rangeFor(range, kampalaDate())) };
+    const selectedRange = { from, to };
+    const [bundle, history] = await Promise.all([
+      loadReports(selectedRange),
+      loadPaymentHistory(selectedRange, offset),
+    ]);
+    return { range, periodMode, custom, bundle, history };
   } catch (error) {
     return rethrowApiError(error);
   }
@@ -54,12 +69,18 @@ const COPY: Record<RangeKey, { trend: string; sales: string; head: string; best:
 };
 
 export default function Reports() {
-  const { range, bundle } = useLoaderData<typeof clientLoader>();
+  const { range, periodMode, custom, bundle, history } = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
+  const [start, setStart] = useState(bundle.range.from);
+  const [end, setEnd] = useState(bundle.range.to);
+  useEffect(() => {
+    setStart(bundle.range.from);
+    setEnd(bundle.range.to);
+  }, [bundle.range.from, bundle.range.to]);
 
   const view = useMemo(() => {
     if (!bundle) return null;
-    const periods = range === "week" ? dailyPeriods(bundle.daily) : weeklyPeriods(bundle.daily);
+    const periods = periodMode === "week" ? dailyPeriods(bundle.daily) : weeklyPeriods(bundle.daily);
     const slices = toSlices(bundle.methods);
     return {
       periods,
@@ -67,9 +88,11 @@ export default function Reports() {
       slices,
       methodTotal: slices.reduce((sum, s) => sum + s.amount, 0),
     };
-  }, [bundle, range]);
+  }, [bundle, periodMode]);
 
-  const copy = COPY[range];
+  const copy = COPY[periodMode];
+  const today = kampalaDate();
+  const calendarMonth = calendarMonthFor(today);
 
   return (
     <>
@@ -77,18 +100,21 @@ export default function Reports() {
         title={screen.title}
         subtitle={bundle ? rangeLabel(bundle.range.from, bundle.range.to) : undefined}
       >
-        <ToggleGroup label="Date range">
-          {RANGES.map((option) => (
-            <ToggleChip
-              key={option.key}
-              size="large"
-              pressed={range === option.key}
-              onClick={() => navigate(`?range=${option.key}`)}
-            >
-              {option.label}
-            </ToggleChip>
-          ))}
-        </ToggleGroup>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Button size="md" variant="tonal" onClick={() => navigate(`?from=${today}&to=${today}`)}>Today</Button>
+            <Button size="md" variant="tonal" onClick={() => navigate(`?from=${calendarMonth.from}&to=${calendarMonth.to}`)}>This month</Button>
+          </div>
+          <label className="flex flex-col gap-1 text-label font-bold tracking-label">
+            From
+            <input aria-label="Reports start date" type="date" value={start} onChange={(e) => setStart(e.target.value)} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
+          </label>
+          <label className="flex flex-col gap-1 text-label font-bold tracking-label">
+            To
+            <input aria-label="Reports end date" type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
+          </label>
+          <Button size="md" variant="tonal" onClick={() => navigate(`?from=${start}&to=${end}`)}>Apply dates</Button>
+        </div>
       </PageHeader>
 
       {bundle && view ? (
@@ -111,6 +137,11 @@ export default function Reports() {
               <PaymentDonut slices={view.slices} total={view.methodTotal} />
             </Panel>
           </div>
+          <PaidOrderHistory
+            id="history"
+            page={history}
+            onPage={(offset) => navigate(`?${custom ? `from=${bundle.range.from}&to=${bundle.range.to}` : `range=${range}`}&offset=${offset}`)}
+          />
 
           <div className="flex flex-wrap items-start gap-6">
             <TopItemsPanel rows={bundle.topItems} />

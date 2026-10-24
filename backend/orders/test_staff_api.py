@@ -83,6 +83,24 @@ class StaffOrderApiTests(TestCase):
         Order.update(self.oid, order_status="served")
         self.assertEqual(len(self.client.get("/api/staff/orders/").data), 1)
 
+    def test_manager_queue_marks_orders_paid_after_cashier_records_payment(self):
+        Order.update(self.oid, order_status="served")
+        self.as_(self.manager)
+        unpaid = self.client.get("/api/staff/orders/").data
+        self.assertIs(unpaid[0]["paid"], False)
+
+        self.as_(self.cashier)
+        paid = self.client.post(
+            f"/api/staff/orders/{self.oid}/pay/",
+            {"payment_method": "Cash"},
+            format="json",
+        )
+        self.assertEqual(paid.status_code, 201)
+
+        self.as_(self.manager)
+        manager_orders = self.client.get("/api/staff/orders/").data
+        self.assertIs(manager_orders[0]["paid"], True)
+
     # --- status changes ---
 
     def test_kitchen_prepares_but_assigned_waiter_serves(self):
