@@ -30,8 +30,6 @@ export interface Call {
 export interface FakeOptions {
   /** Serve GET /api/tables/ (gap G1 closed). Otherwise it is a 404. */
   tablesEndpoint?: boolean;
-  /** Serve POST /api/staff/orders/ (gap G3 closed). Otherwise a 405. */
-  staffCreate?: boolean;
   /** Replace the order list (wire shape). */
   orders?: WireOrder[];
   /** Fail the next order placement with this 400 message. */
@@ -208,9 +206,7 @@ export class FakeApi {
     }
 
     if (path === "/api/staff/orders/" && method === "POST") {
-      if (!this.options.staffCreate)
-        return this.json(route, 405, { detail: 'Method "POST" not allowed.' });
-      return this.create(route, (body as { table_id: number }).table_id, body);
+      return this.json(route, 405, { detail: 'Method "POST" not allowed.' });
     }
 
     const status = path.match(/^\/api\/staff\/orders\/(\d+)\/status\/$/);

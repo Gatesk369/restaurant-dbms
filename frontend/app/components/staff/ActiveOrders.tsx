@@ -48,8 +48,8 @@ export function ActiveOrders({
     <Panel>
       <PanelHeading
         level="title"
-        title="Active orders"
-        caption="Kitchen staff move orders from pending to preparing to served."
+        title={role === "wait_staff" ? "Assigned orders" : "Active orders"}
+        caption="Kitchen staff prepare orders and mark them ready. Assigned wait staff deliver and mark them served."
       >
         <ToggleGroup label="Order status">
           {FILTERS.map((name) => (
@@ -60,6 +60,13 @@ export function ActiveOrders({
         </ToggleGroup>
       </PanelHeading>
 
+      {visible.length === 0 ? (
+        <p role="status" className="m-0 text-body text-moss">
+          {role === "wait_staff"
+            ? "No assigned orders match this filter. New orders appear here when assigned to you."
+            : "No active orders match this filter."}
+        </p>
+      ) : null}
       <DataTable label="Active orders" columns={COLUMNS} minWidth={960}>
         <DataHeader>
           <DataCell header>Order</DataCell>
@@ -83,7 +90,16 @@ export function ActiveOrders({
                 {order.waiter ? <div className="text-label text-moss">{order.waiter}</div> : null}
               </DataCell>
               <DataCell>
-                {order.items.map((item) => `${item.quantity}× ${item.item_name}`).join(", ")}
+                <div>
+                  {order.items.map((item) => `${item.quantity}× ${item.item_name}`).join(", ")}
+                </div>
+                {order.items
+                  .filter((item) => item.special_instructions)
+                  .map((item) => (
+                    <div key={item.order_item_id} className="mt-1 text-label text-moss">
+                      {item.item_name}: {item.special_instructions}
+                    </div>
+                  ))}
               </DataCell>
               <DataCell align="right" className="font-bold tabular-nums">
                 {`UGX ${formatAmount(order.total)}`}
@@ -96,6 +112,7 @@ export function ActiveOrders({
                   <Button
                     variant="tonal"
                     pending={busyOrderId === order.order_id}
+                    disabled={busyOrderId !== null}
                     onClick={() => onAdvance(order, action.to)}
                   >
                     {action.label}

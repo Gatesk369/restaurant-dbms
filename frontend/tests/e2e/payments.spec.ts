@@ -283,7 +283,9 @@ test.describe("edge cases", () => {
     await page.goto("/payments");
 
     await expect(
-      page.getByText("Nothing to collect. Orders appear here when the kitchen marks them served."),
+      page.getByText(
+        "Nothing to collect. Orders appear here when the assigned waiter marks them served.",
+      ),
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "All served orders are paid" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Go to orders" })).toHaveAttribute(

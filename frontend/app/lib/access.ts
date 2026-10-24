@@ -28,7 +28,8 @@ export const SCREENS: readonly Screen[] = [
     nav: "Orders",
     title: "Orders",
     icon: "orders",
-    subtitle: "Open an order for a table, add items, then send it to the kitchen.",
+    subtitle:
+      "Kitchen staff prepare orders and mark them ready; assigned wait staff deliver and mark them served.",
     roles: ["cashier", "wait_staff", "kitchen", "manager"],
   },
   {

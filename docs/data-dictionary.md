@@ -255,8 +255,10 @@ total, and duplicate payment attempts.
    lines, and the service inserts an `orders` row and its `order_items`. The
    order-item trigger calculates each subtotal, while the order trigger marks
    the table occupied and assigns an available waiter when possible.
-4. **Fulfillment:** kitchen and wait staff read the queue and move the order
-   through `confirmed`, `preparing`, `ready`, and `served`. Finishing or
+4. **Fulfillment:** kitchen staff move assigned orders from `confirmed` through
+   `preparing` to `ready`. The assigned waiter delivers and marks the order
+   `served`; managers retain an override. Wait staff see only their own orders.
+   Staff do not create orders; customer sessions submit them. Finishing or
    cancelling an assigned order can release the next pending order to a waiter.
 5. **Payment:** a cashier can pay only a served order. The service locks the
    order, calculates the amount from stored subtotals, and inserts one payment.
