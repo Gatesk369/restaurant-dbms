@@ -37,6 +37,13 @@ const panel = (page: Page, heading: string) =>
 const summary = (page: Page) => page.getByRole("region", { name: "Summary" });
 const chart = (page: Page) => page.getByRole("img", { name: /^Bar chart of revenue/ });
 
+async function selectFourWeeks(page: Page) {
+  await page.getByLabel("Reports start date").fill("2026-09-14");
+  await page.getByLabel("Reports end date").fill("2026-10-11");
+  await page.getByRole("button", { name: "Apply dates" }).click();
+  await expect(page.getByText("14 September to 11 October 2026")).toBeVisible();
+}
+
 test.describe("fidelity against the mock-up", () => {
   test("This week matches the artboard panel by panel", async ({ page }) => {
     await openReports(page);
@@ -90,40 +97,13 @@ test.describe("fidelity against the mock-up", () => {
     });
   });
 
-  test("Last 4 weeks matches the artboard", async ({ page }) => {
+  test("custom four-week range shows weekly reports", async ({ page }) => {
     await openReports(page);
-    await page.getByRole("button", { name: "Last 4 weeks" }).click();
+    await selectFourWeeks(page);
     await expect(page.getByText("14 September to 11 October 2026")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Weekly revenue" })).toBeVisible();
-    const ref = "staff-reports-month";
-
-    await expectElementMatchesReference(page, summary(page), ref, {
-      x: 264,
-      y: 112,
-      width: 1072,
-      height: 84,
-    });
-    // Value labels over the bars are drawn with grayscale text smoothing here
-    // and sub-pixel smoothing in the capture; the geometry is identical.
-    await expectElementMatchesReference(
-      page,
-      panel(page, "Weekly revenue"),
-      ref,
-      { x: 264, y: 220, width: 661, height: 355 },
-      { maxRatio: 0.01 },
-    );
-    await expectElementMatchesReference(page, panel(page, "Weekly sales"), ref, {
-      x: 264,
-      y: 1100,
-      width: 606,
-      height: 362,
-    });
-    await expectElementMatchesReference(page, panel(page, "Table turnover"), ref, {
-      x: 894,
-      y: 1100,
-      width: 442,
-      height: 650,
-    });
+    expect(page.url()).toContain("from=2026-09-14");
+    expect(page.url()).toContain("to=2026-10-11");
   });
 });
 
@@ -140,22 +120,10 @@ test.describe("the date range", () => {
     }
   });
 
-  test("switches to the four weeks ending that Sunday and keeps it in the URL", async ({
-    page,
-  }) => {
+  test("applies a custom range and keeps it in the URL", async ({ page }) => {
     const api = await openReports(page);
-    const toggle = page.getByRole("group", { name: "Date range" });
-    await expect(toggle.getByRole("button", { name: "This week" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-
-    await toggle.getByRole("button", { name: "Last 4 weeks" }).click();
-    await expect(page).toHaveURL(/\?range=month$/);
-    await expect(toggle.getByRole("button", { name: "Last 4 weeks" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await selectFourWeeks(page);
+    await expect(page).toHaveURL(/\?from=2026-09-14&to=2026-10-11$/);
     const monthCall = api.callsTo("GET", "/api/staff/reports/daily-sales/").at(-1)!;
     expect(monthCall.query).toContain("from=2026-09-14");
     expect(monthCall.query).toContain("to=2026-10-11");
@@ -197,7 +165,7 @@ test.describe("the figures", () => {
 
   test("summarise four weeks from the same daily rows", async ({ page }) => {
     await openReports(page);
-    await page.getByRole("button", { name: "Last 4 weeks" }).click();
+    await selectFourWeeks(page);
     const strip = summary(page);
     await expect(strip).toContainText("UGX 40,540,000");
     await expect(strip).toContainText("1,321");
@@ -208,7 +176,7 @@ test.describe("the figures", () => {
 
   test("the weekly table sums the daily rows and totals them", async ({ page }) => {
     await openReports(page);
-    await page.getByRole("button", { name: "Last 4 weeks" }).click();
+    await selectFourWeeks(page);
     const table = page.getByRole("table", { name: "Sales by period" });
     await expect(table.getByRole("row")).toHaveCount(6); // header + 4 weeks + total
     await expect(table.getByRole("row").nth(1)).toContainText("14–20 Sep");
@@ -240,7 +208,7 @@ test.describe("the figures", () => {
 
   test("the weekly chart uses a round axis for its larger values", async ({ page }) => {
     await openReports(page);
-    await page.getByRole("button", { name: "Last 4 weeks" }).click();
+    await selectFourWeeks(page);
     const bars = chart(page);
     for (const tick of ["0", "3M", "6M", "9M", "12M"]) {
       await expect(bars.getByText(tick, { exact: true }).first()).toBeVisible();

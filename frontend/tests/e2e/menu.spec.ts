@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { expectElementMatchesReference } from "../visual/compare";
 import { FakeApi, type FakeOptions } from "./fake-api";
 import { PERSONAS, fontsReady, signInAs, type Persona } from "./helpers";
 
@@ -27,100 +26,24 @@ async function openMenu(
   return api;
 }
 
-const list = (page: Page) =>
-  page.locator("section", { has: page.getByRole("table", { name: "Menu items" }) });
-const editor = (page: Page) => page.locator("form");
-const placeholder = (page: Page) =>
-  page.getByRole("heading", { name: "Item details" }).locator("..");
 const rows = (page: Page) => page.getByRole("table", { name: "Menu items" }).getByRole("row");
 const row = (page: Page, name: string | RegExp) =>
   page.getByRole("table", { name: "Menu items" }).getByRole("row", { name });
 
-const LIST = { x: 264, width: 708 };
-const EDITOR = { x: 996, width: 340 };
-
-test.describe("fidelity against the mock-up", () => {
-  test("list and the empty editor match the artboard", async ({ page }) => {
-    await openMenu(page);
-    await expect(rows(page)).toHaveCount(18); // header + 17 (MI-017 is archived)
-    await expectElementMatchesReference(page, list(page), "staff-menu", {
-      ...LIST,
-      y: 112,
-      height: 1255,
-    });
-    await expectElementMatchesReference(page, placeholder(page), "staff-menu", {
-      ...EDITOR,
-      y: 112,
-      height: 134,
-    });
-  });
-
-  test("the add form and its validation errors match", async ({ page }) => {
+test.describe("menu editor dialog", () => {
+  test("opens as a centered popup that fits the viewport", async ({ page }) => {
     await openMenu(page);
     await page.getByRole("button", { name: "Add item" }).click();
+    const dialog = page.getByRole("dialog", { name: "Menu item editor" });
+    await expect(dialog).toBeVisible();
     await expect(page.getByRole("heading", { name: "Add item", level: 2 })).toBeVisible();
-    await expectElementMatchesReference(page, editor(page), "staff-menu-add", {
-      ...EDITOR,
-      y: 112,
-      height: 498,
-    });
-
-    await page.getByRole("button", { name: "Save item" }).click();
-    await expect(page.getByRole("alert")).toHaveCount(2);
-    // The mock-up's flex row lets the error icon shrink when the message
-    // wraps (it is drawn smaller there); the icon keeps its size here.
-    await expectElementMatchesReference(
-      page,
-      editor(page),
-      "staff-menu-add-errors",
-      { ...EDITOR, y: 112, height: 574 },
-      { maxRatio: 0.015 },
-    );
-  });
-
-  test("editing an unavailable item matches", async ({ page }) => {
-    await openMenu(page);
-    await page.getByRole("button", { name: "Edit Grilled Goat Ribs" }).click();
-    await expect(page.getByRole("heading", { name: "Edit MI-005" })).toBeVisible();
-    await expectElementMatchesReference(page, editor(page), "staff-menu-edit", {
-      ...EDITOR,
-      y: 112,
-      height: 498,
-    });
-  });
-
-  test("archive toast, archived rows and the no-match state match", async ({ page }) => {
-    await openMenu(page);
-    await page.getByRole("button", { name: "Edit Grilled Goat Ribs" }).click();
-    await page.getByRole("button", { name: "Archive Fruit Platter" }).click();
-    await expect(
-      page.getByText("Fruit Platter archived. Past orders still show it."),
-    ).toBeVisible();
-    await expectElementMatchesReference(page, list(page), "staff-menu-archived-toast", {
-      ...LIST,
-      y: 180,
-      height: 1194,
-    });
-
-    await page.getByRole("checkbox", { name: /Show archived/ }).check();
-    await expectElementMatchesReference(page, list(page), "staff-menu-show-archived", {
-      ...LIST,
-      y: 180,
-      height: 1316,
-    });
-
-    await page.getByLabel("Search menu items").fill("zzz");
-    await expect(page.getByText("No items match.")).toBeVisible();
-    // The mock-up prints the count as "( 2 )" (its inline-flex label puts a gap
-    // around the number); here it reads "(2)". On this short panel that is
-    // enough pixels to need a little room.
-    await expectElementMatchesReference(
-      page,
-      list(page),
-      "staff-menu-no-match",
-      { ...LIST, y: 180, height: 286 },
-      { maxRatio: 0.015 },
-    );
+    const bounds = await dialog.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThan(0);
+    expect(bounds!.y).toBeGreaterThan(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(1360);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(900);
+    expect(Math.abs(bounds!.x + bounds!.width / 2 - 680)).toBeLessThanOrEqual(2);
   });
 });
 
@@ -167,6 +90,18 @@ test.describe("the list", () => {
       row(page, /MI-017/).getByRole("button", { name: "Restore Banana Fritters" }),
     ).toBeVisible();
   });
+
+  test("shows archive feedback, archived rows and the no-match state", async ({ page }) => {
+    await openMenu(page);
+    await page.getByRole("button", { name: "Archive Fruit Platter" }).click();
+    await expect(
+      page.getByText("Fruit Platter archived. Past orders still show it."),
+    ).toBeVisible();
+    await page.getByRole("checkbox", { name: /Show archived/ }).check();
+    await expect(row(page, /MI-018/)).toContainText("Archived");
+    await page.getByLabel("Search menu items").fill("zzz");
+    await expect(page.getByText("No items match.")).toBeVisible();
+  });
 });
 
 test.describe("adding and editing", () => {
@@ -202,10 +137,11 @@ test.describe("adding and editing", () => {
       price: 4500,
       availability_status: true,
       category: "Snacks",
+      image_url: null,
     });
     await expect(row(page, /MI-019/)).toContainText("Roasted Maize");
     await expect(row(page, /MI-019/)).toContainText("Snacks");
-    await expect(page.getByRole("heading", { name: "Item details" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Menu item editor" })).toBeHidden();
   });
 
   test("loads an item, saves changes and keeps the list in step", async ({ page }) => {
@@ -237,7 +173,7 @@ test.describe("adding and editing", () => {
     await page.getByRole("button", { name: "Edit Rolex" }).click();
     await page.getByLabel("Item name").fill("Changed");
     await page.getByRole("button", { name: "Cancel" }).click();
-    await expect(page.getByRole("heading", { name: "Item details" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Menu item editor" })).toBeHidden();
     expect(api.callsTo("PATCH", "/api/staff/menu/6/")).toHaveLength(0);
   });
 
@@ -272,11 +208,13 @@ test.describe("archiving and restoring", () => {
     await expect(row(page, /MI-009/).getByText("Available", { exact: true })).toBeVisible();
   });
 
-  test("closes the editor when its item is archived", async ({ page }) => {
+  test("returns to the list before archiving a row", async ({ page }) => {
     await openMenu(page);
     await page.getByRole("button", { name: "Edit Chapati" }).click();
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByRole("dialog", { name: "Menu item editor" })).toBeHidden();
     await page.getByRole("button", { name: "Archive Chapati" }).click();
-    await expect(page.getByRole("heading", { name: "Item details" })).toBeVisible();
+    await expect(page.getByText("Chapati archived. Past orders still show it.")).toBeVisible();
   });
 });
 
