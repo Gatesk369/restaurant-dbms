@@ -13,8 +13,6 @@ export const SCREEN_INDEX: Record<StationScreen, number> = {
   done: 3,
 };
 
-export type PayChoice = "till" | "momo";
-
 /**
  * The tracker has three rows: Pending, Preparing, Served. The kitchen's
  * statuses map onto them (plan D6); a cancelled order has no row.
@@ -72,16 +70,4 @@ export function orderFor(table: number | null, guestName: string): string {
   const label = table ? `Table ${table}` : "No table chosen";
   const name = guestName.trim();
   return name ? `${label} · ${name}` : label;
-}
-
-export function payNote(
-  pay: PayChoice,
-  orderNo: string,
-  totalText: string,
-  phone: string,
-  network: string,
-): string {
-  return pay === "till"
-    ? `Pay at the till when you are ready. Quote ${orderNo} to the cashier.`
-    : `A payment request for ${totalText} was sent to ${phone.trim() || "your phone"} on ${network}. Approve it on your phone.`;
 }

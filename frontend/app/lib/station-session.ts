@@ -1,4 +1,4 @@
-import type { PayChoice, StationScreen } from "./domain/station";
+import type { StationScreen } from "./domain/station";
 
 /**
  * What the station keeps across a refresh: the screen, the table, the cart and
@@ -11,9 +11,6 @@ export interface StationDraft {
   category: string;
   lines: { menu_item_id: number; quantity: number }[];
   notes: string;
-  pay: PayChoice;
-  network: string;
-  phone: string;
   /** Set once the order was sent. */
   orderId: number | null;
 }
@@ -27,9 +24,6 @@ export const EMPTY_DRAFT: StationDraft = {
   category: "Mains",
   lines: [],
   notes: "",
-  pay: "till",
-  network: "MTN Mobile Money",
-  phone: "",
   orderId: null,
 };
 
@@ -40,7 +34,16 @@ export function loadDraft(): StationDraft {
     const data = JSON.parse(raw) as Partial<StationDraft>;
     const screens: StationScreen[] = ["start", "menu", "review", "done"];
     if (!data.screen || !screens.includes(data.screen)) return EMPTY_DRAFT;
-    return { ...EMPTY_DRAFT, ...data };
+    // Pick current fields so older drafts cannot retain payment choices or phone numbers.
+    return {
+      screen: data.screen,
+      table: data.table ?? EMPTY_DRAFT.table,
+      guestName: data.guestName ?? EMPTY_DRAFT.guestName,
+      category: data.category ?? EMPTY_DRAFT.category,
+      lines: data.lines ?? EMPTY_DRAFT.lines,
+      notes: data.notes ?? EMPTY_DRAFT.notes,
+      orderId: data.orderId ?? EMPTY_DRAFT.orderId,
+    };
   } catch {
     return EMPTY_DRAFT;
   }

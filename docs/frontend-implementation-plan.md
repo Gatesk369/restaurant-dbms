@@ -260,7 +260,7 @@ Phase 2.
 | G12 | "Received today UGX …" chip on Payments (cashier)                                                           | Daily totals are manager-only                                                       | Chip is labelled **Received this session** and sums payments recorded in this browser session                                               | `GET /api/staff/payments/today/` for cashier and manager → `{count, total}`                                              |
 | G13 | "Average stay" column in Table turnover                                                                     | Not computed                                                                        | Column hidden                                                                                                                               | Add `avg_stay_minutes` (payment time minus order time) to the table-turnover rows                                        |
 | G14 | "Call a waiter" notifies a waiter                                                                           | No endpoint                                                                         | Toast only (as in the mock-up); nothing is sent                                                                                             | `POST /api/my/call-waiter/`                                                                                              |
-| G15 | "Mobile money now" collects payment                                                                         | No customer-facing payment flow                                                     | UI-only; the choice is shown on the Done step and not stored (open design question, OQ3)                                                    | Depends on OQ3                                                                                                           |
+| G15 | "Mobile money now" collects payment                                                                         | No customer-facing payment flow                                                     | Resolved by #38: no customer payment selection; cashier records the actual method                                                           | Depends on OQ3                                                                                                           |
 | G16 | Order tracker reflects kitchen progress                                                                     | Available via polling `GET /api/my/orders/{id}/`                                    | Poll every 5 s                                                                                                                              | None                                                                                                                     |
 | G17 | Database activity log of trigger effects                                                                    | The API returns results, not trigger logs                                           | Log lines are built from real responses plus known trigger rules (section 6.2, 6.3)                                                         | None; optional later `GET /api/staff/activity/`                                                                          |
 
@@ -653,17 +653,17 @@ artboard; every chart has its values printed and a table.
 (G1), public menu (G5–G8), customers, my orders.
 
 The route renders `StationCanvas` (fixed 1280 × 800, scaled per D11) and
-holds `{screen, table, guestName, cat, lines, notes, pay, network, phone,
-tried, step, toast}` in a reducer, persisted to `sessionStorage` so a refresh
-does not lose the cart.
+persists `{screen, table, guestName, category, lines, notes, orderId}` in
+`sessionStorage` so a refresh does not lose the cart. Legacy payment fields
+are discarded when loading older drafts (#38).
 
-| Step         | Key behaviour and copy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1 Table**  | Hero "Order from your table"; lede "Pick your table, choose your food and send it to the kitchen. A waiter brings it to you."; optional name ("Your name (optional)", placeholder "So the waiter knows who to look for"); **Start order** disabled until a table is picked; hint "Choose a table to continue." → "Table 6 selected."; grid note "Tables marked In use already have an order open." On Start: `POST /api/customers/`                                                                                                 |
-| **2 Menu**   | Category rail (Mains, Snacks, Sides, Drinks, Desserts), item cards, cart "Your order" with `Table 6 · Name`, empty text "Nothing yet. Tap a dish or drink to add it.", **Review order** disabled when empty, **Change table** returns to step 1                                                                                                                                                                                                                                                                                     |
-| **3 Review** | "Check your order"; stepper lines; "Special instructions for the kitchen"; "How will you pay?" with **At the till** ("Cash or mobile money with the cashier") and **Mobile money now** ("MTN or Airtel, from your phone"); till message "Pay the cashier with cash or mobile money when you are ready to leave. Quote your order number."; momo fields Network + Phone, error `Error: enter a 10-digit number that starts with 07.`; removing the last line returns to the menu; **Back to menu**, **Send to kitchen · UGX 52,000** |
-| **4 Done**   | "Order sent to the kitchen", `ORD-1047 · Table 6`; tracker Pending ("The kitchen has your order"), Preparing ("Your food is being cooked"), Served ("A waiter has brought it to your table") with chips Now/Done/Next; payment note `Pay at the till when you are ready. Quote ORD-1047 to the cashier.` or `A payment request for UGX 52,000 was sent to 0772 123 456 on MTN Mobile Money. Approve it on your phone.` (G15); **Start a new order**; prototype advance button only when D13 is on                                   |
-| **Header**   | Wordmark, 4-step progress stepper with `Step n of 4, Name, current                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | completed | upcoming`, **Call a waiter** → toast `A waiter is on the way to Table 6.` for 4 s (G14) |
+| Step         | Key behaviour and copy                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1 Table**  | Hero "Order from your table"; lede "Pick your table, choose your food and send it to the kitchen. A waiter brings it to you."; optional name ("Your name (optional)", placeholder "So the waiter knows who to look for"); **Start order** disabled until a table is picked; hint "Choose a table to continue." → "Table 6 selected."; grid note "Tables marked In use already have an order open." On Start: `POST /api/customers/` |
+| **2 Menu**   | Category rail (Mains, Snacks, Sides, Drinks, Desserts), item cards, cart "Your order" with `Table 6 · Name`, empty text "Nothing yet. Tap a dish or drink to add it.", **Review order** disabled when empty, **Change table** returns to step 1                                                                                                                                                                                     |
+| **3 Review** | "Check your order"; quantity steppers; "Special instructions for the kitchen"; removing the last line returns to the menu; **Back to menu**, **Send to kitchen · UGX 52,000**. No payment selection, network or phone fields (#38).                                                                                                                                                                                                 |
+| **4 Done**   | "Order sent to the kitchen", `ORD-1047 · Table 6`; tracker Pending, Preparing, Served with chips Now/Done/Next; ask the waiter for payment options and quote the order number to the cashier, who records payment. No payment request or collection is claimed. **Start a new order**; prototype advance only when D13 is on.                                                                                                       |
+| **Header**   | Wordmark, 4-step progress stepper with `Step n of 4, Name, current                                                                                                                                                                                                                                                                                                                                                                  | completed | upcoming`, **Call a waiter** → toast `A waiter is on the way to Table 6.` for 4 s (G14) |
 
 Order id comes from the API response (`ORD-{order_id}`), not the mock-up's
 fixed `ORD-1047`. The tracker polls the order and maps backend statuses with
@@ -688,9 +688,9 @@ an error panel above the bottom bar and return the cart to the menu.
   5 s (paused while the tab is hidden) and after a refresh. A cancelled order
   replaces the tracker with "This order was cancelled. Please speak to a
   waiter." The prototype button only exists when `VITE_PROTOTYPE_CONTROLS=true`.
-- "Mobile money now" does not collect payment: the choice and phone are
-  validated and echoed on the Done step but only the cart is sent (gap G15,
-  open question OQ3). "Call a waiter" shows its toast only (gap G14).
+- Customers submit only cart lines and kitchen instructions. Submitting an order
+  creates no payment; the cashier chooses cash or mobile money at checkout
+  (#38 resolves G15/OQ3). "Call a waiter" shows its toast only (gap G14).
 - Without `GET /api/tables/` every configured table is offered as free (a
   customer cannot see which are in use) and tiles say Free instead of seats.
   Without the public menu returning unavailable items, no "Sold out" card can
@@ -700,7 +700,8 @@ an error panel above the bottom bar and return the cart to the menu.
 - After five minutes without a touch on the Table or Done step the station
   forgets the last customer (OQ5 default).
 
-**Acceptance:** each of the four states matches the artboard pixel-for-pixel;
+**Acceptance:** Table and Menu match the artboard; Review and Done use updated
+#38 screenshot baselines with customer payment controls removed;
 Grilled Goat Ribs renders sold out once G6/G8 land; touch targets are at
 least 56px (category 64, tables 96); the stepper announces correctly.
 
@@ -856,16 +857,16 @@ and G6 to be complete; Phase 6 needs G1, G5 to G8.
 | Customer tokens in `sessionStorage` on a shared kiosk | Next customer sees a prior session                                | "Start a new order" clears it; add idle reset (OQ5)                           |
 | Demo database ids (1001…) differ from mock-up labels  | Reviewers think the UI is wrong                                   | Seed 12 tables and 18 items with low ids for demos (OQ6)                      |
 
-| #   | Open question                                                                                     | Default if unanswered                                         |
-| --- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| OQ1 | Is the extra `Ready` word acceptable on the Active orders board?                                  | Yes, using the Preparing colours                              |
-| OQ2 | Add Description and Image URL fields to the Menu editor (the station needs them)?                 | Not added until design approves                               |
-| OQ3 | Should "Mobile money now" collect payment or only notify the cashier? (design document)           | UI-only, as in the mock-up                                    |
-| OQ4 | Should station orders appear on the staff board, and how does Kitchen see them? (design document) | They do, through the shared API, with no extra UI             |
-| OQ5 | Station scaling on larger kiosks and an idle reset timeout                                        | Scale to fit, 5-minute idle reset on the Done and Table steps |
-| OQ6 | Seed 12 tables (ids 1–12) and 18 menu items for demos?                                            | Use whatever ids the database has                             |
-| OQ7 | New strings: session ended, order cancelled, locked panel body                                    | Use the wording in this plan                                  |
-| OQ8 | Dedicated Kitchen view and portrait/phone station layout (design document)                        | Out of scope for this plan                                    |
+| #   | Open question                                                                                     | Default if unanswered                                                                |
+| --- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| OQ1 | Is the extra `Ready` word acceptable on the Active orders board?                                  | Yes, using the Preparing colours                                                     |
+| OQ2 | Add Description and Image URL fields to the Menu editor (the station needs them)?                 | Not added until design approves                                                      |
+| OQ3 | Should customers select payment during ordering?                                                  | Resolved by #38: customers submit orders; cashiers record the actual payment method. |
+| OQ4 | Should station orders appear on the staff board, and how does Kitchen see them? (design document) | They do, through the shared API, with no extra UI                                    |
+| OQ5 | Station scaling on larger kiosks and an idle reset timeout                                        | Scale to fit, 5-minute idle reset on the Done and Table steps                        |
+| OQ6 | Seed 12 tables (ids 1–12) and 18 menu items for demos?                                            | Use whatever ids the database has                                                    |
+| OQ7 | New strings: session ended, order cancelled, locked panel body                                    | Use the wording in this plan                                                         |
+| OQ8 | Dedicated Kitchen view and portrait/phone station layout (design document)                        | Out of scope for this plan                                                           |
 
 ## 12. Definition of done
 

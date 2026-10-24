@@ -17,7 +17,6 @@ interface DoneStepProps {
   step: number;
   /** The kitchen cancelled it: the tracker is replaced by a note. */
   cancelled: boolean;
-  payNote: string;
   summary: readonly Summary[];
   kitchenNote: string;
   total: number;
@@ -28,13 +27,12 @@ interface DoneStepProps {
   onReset: () => void;
 }
 
-/** Step 4: confirmation, the three-row tracker, payment note and the summary. */
+/** Step 4: confirmation, the three-row tracker, cashier instructions and the summary. */
 export function DoneStep({
   orderNo,
   tableLabel,
   step,
   cancelled,
-  payNote,
   summary,
   kitchenNote,
   total,
@@ -104,7 +102,10 @@ export function DoneStep({
           </ol>
         )}
 
-        <p className="m-0 rounded-md bg-tea px-4 py-3 text-body tracking-body">{payNote}</p>
+        <p className="m-0 rounded-md bg-tea px-4 py-3 text-body tracking-body">
+          When you are ready to pay, ask your waiter for the payment options. Quote {orderNo} to the
+          cashier, who will record your payment.
+        </p>
 
         <div className="mt-auto flex flex-wrap items-center gap-3">
           <Button size="touch" onClick={onReset}>
