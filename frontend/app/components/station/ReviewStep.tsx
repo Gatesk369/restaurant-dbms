@@ -37,66 +37,74 @@ export function ReviewStep({
 }: ReviewStepProps) {
   return (
     <div className="box-border flex h-[728px] flex-col gap-4 p-6">
-      <div className="flex min-h-0 flex-auto gap-6">
-        <section className="box-border flex min-w-0 flex-[1.2_1_0] flex-col gap-3 rounded-md border border-tea p-6">
-          <div>
-            <h2 className="m-0 text-title font-normal">Check your order</h2>
-            <p className="m-0 text-body tracking-body text-moss">{orderFor}</p>
-          </div>
-          <div className="min-h-0 flex-auto overflow-y-auto">
-            {cart.map((line) => (
-              <div
-                key={line.menuItemId}
-                className="flex items-center gap-4 border-b border-tea py-[10px]"
-              >
-                <div className="min-w-0 flex-auto">
-                  <div className="text-heading font-bold tracking-heading">{line.name}</div>
-                  <div className="text-label tracking-caption text-moss">
-                    {line.quantity} × {formatUgx(line.unitPrice)}
+      <fieldset disabled={sending} className="contents">
+        <div className="flex min-h-0 flex-auto gap-6">
+          <section className="box-border flex min-w-0 flex-[1.2_1_0] flex-col gap-3 rounded-md border border-tea p-6">
+            <div>
+              <h2 className="m-0 text-title font-normal">Check your order</h2>
+              <p className="m-0 text-body tracking-body text-moss">{orderFor}</p>
+            </div>
+            <div className="min-h-0 flex-auto overflow-y-auto">
+              {cart.map((line) => (
+                <div
+                  key={line.menuItemId}
+                  className="flex items-center gap-4 border-b border-tea py-[10px]"
+                >
+                  <div className="min-w-0 flex-auto">
+                    <div className="text-heading font-bold tracking-heading">{line.name}</div>
+                    <div className="text-label tracking-caption text-moss">
+                      {line.quantity} × {formatUgx(line.unitPrice)}
+                    </div>
+                  </div>
+                  <QuantityStepper
+                    size="lg"
+                    value={line.quantity}
+                    itemName={line.name}
+                    onDecrement={() => onDecrement(line.menuItemId)}
+                    onIncrement={() => onIncrement(line.menuItemId)}
+                  />
+                  <div className="min-w-[104px] flex-none text-right text-heading font-bold tabular-nums">
+                    {formatUgx(line.quantity * line.unitPrice)}
                   </div>
                 </div>
-                <QuantityStepper
-                  size="lg"
-                  value={line.quantity}
-                  itemName={line.name}
-                  onDecrement={() => onDecrement(line.menuItemId)}
-                  onIncrement={() => onIncrement(line.menuItemId)}
-                />
-                <div className="min-w-[104px] flex-none text-right text-heading font-bold tabular-nums">
-                  {formatUgx(line.quantity * line.unitPrice)}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-baseline justify-between gap-3 border-t border-moss pt-2">
-            <span className="text-heading font-bold">Total</span>
-            <span className="text-title font-bold tabular-nums">{formatUgx(total)}</span>
-          </div>
-        </section>
+              ))}
+            </div>
+            <div className="flex items-baseline justify-between gap-3 border-t border-moss pt-2">
+              <span className="text-heading font-bold">Total</span>
+              <span className="text-title font-bold tabular-nums">{formatUgx(total)}</span>
+            </div>
+          </section>
 
-        <section className="box-border flex min-w-0 flex-[1_1_0] flex-col gap-4 overflow-y-auto pr-1">
-          <Field label="Special instructions for the kitchen">
-            <Textarea
-              controlSize="touch"
-              className="resize-none"
-              placeholder="For example: no onions, sauce on the side"
-              value={notes}
-              onChange={(e) => onNotes(e.target.value)}
-            />
-          </Field>
-        </section>
-      </div>
+          <section className="box-border flex min-w-0 flex-[1_1_0] flex-col gap-4 overflow-y-auto pr-1">
+            <Field label="Special instructions for the kitchen">
+              <Textarea
+                controlSize="touch"
+                className="resize-none"
+                placeholder="For example: no onions, sauce on the side"
+                value={notes}
+                onChange={(e) => onNotes(e.target.value)}
+              />
+            </Field>
+          </section>
+        </div>
 
-      {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FieldError>{error}</FieldError> : null}
 
-      <div className="flex flex-none items-center justify-between gap-4">
-        <Button variant="tonal" size="touch" onClick={onBack}>
-          Back to menu
-        </Button>
-        <Button size="touch" className="min-w-[320px]" pending={sending} onClick={onSend}>
-          Send to kitchen · {formatUgx(total)}
-        </Button>
-      </div>
+        <div className="flex flex-none items-center justify-between gap-4">
+          <Button variant="tonal" size="touch" onClick={onBack}>
+            Back to menu
+          </Button>
+          <Button
+            size="touch"
+            className="min-w-[320px]"
+            pending={sending}
+            pendingLabel="Sending order…"
+            onClick={onSend}
+          >
+            Send to kitchen · {formatUgx(total)}
+          </Button>
+        </div>
+      </fieldset>
     </div>
   );
 }

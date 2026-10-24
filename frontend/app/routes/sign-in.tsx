@@ -65,7 +65,7 @@ function SignInForm() {
   // action object, so the same message shows again after a repeat failure).
   const [dismissed, setDismissed] = useState<unknown>(null);
   const error = actionData?.error && actionData !== dismissed ? actionData.error : null;
-  const submitting = navigation.state === "submitting";
+  const submitting = navigation.state !== "idle";
 
   function pickRole(next: Role) {
     setRole(next);
@@ -78,7 +78,14 @@ function SignInForm() {
   }
 
   return (
-    <Form method="post" noValidate className="flex flex-col gap-6">
+    <Form
+      method="post"
+      onSubmit={(event) => {
+        if (submitting) event.preventDefault();
+      }}
+      noValidate
+      className="flex flex-col gap-6"
+    >
       <div>
         <h2 className="m-0 text-title font-normal">Sign in</h2>
         <p className="mt-1 mb-0 text-body tracking-body text-moss">
@@ -137,7 +144,13 @@ function SignInForm() {
 
       {error ? <FieldError>{error}</FieldError> : null}
 
-      <Button type="submit" size="lg" pending={submitting} className="min-w-40 self-start">
+      <Button
+        type="submit"
+        size="lg"
+        pending={submitting}
+        pendingLabel="Signing in…"
+        className="min-w-40 self-start"
+      >
         Sign in
       </Button>
     </Form>

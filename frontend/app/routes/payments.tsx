@@ -110,6 +110,7 @@ export default function Payments() {
   }
 
   function select(orderId: number) {
+    if (paying) return;
     setSelectedId(orderId);
     setReceipt(null);
     resetForm();
@@ -177,6 +178,7 @@ export default function Payments() {
             orders={queue}
             selectedId={receipt ? null : (selected?.order_id ?? null)}
             onSelect={select}
+            disabled={paying}
           />
         </aside>
 

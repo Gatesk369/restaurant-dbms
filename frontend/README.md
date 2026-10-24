@@ -146,3 +146,22 @@ The cashier chooses the actual cash or mobile-money method at checkout. Cash
 amount/change and mobile network/phone validation remain in the cashier flow.
 The API stores Cash or Mobile Money for receipts and reports; network and phone
 remain local cashier details until backend issue #16 is implemented.
+
+## Loading feedback
+
+Pending actions use the existing Button component with a visible progress
+indicator, an action-specific label, `aria-busy`, and a live announcement outside
+the busy button. Controls disabled for missing required input do not show
+progress. Motion-sensitive users get the same indicator without animation.
+
+The initial data load shows Loading; route changes name the destination while
+keeping the previous screen visible. Staff background refreshes preserve the
+current content and expose busy state without flashing a navigation banner.
+Status changes stay locked through queue revalidation. Menu and payment controls
+cannot switch targets or modify form values during a mutation; failed requests
+restore controls and retain input for retry.
+
+`tests/e2e/loading.spec.ts` holds API responses open to check pending UI and
+repeated clicks, injects failures, and verifies retries and single order/payment
+creation. Call-a-waiter remains a synchronous prototype toast (backend #18), so
+it has immediate feedback rather than a simulated network loading state.

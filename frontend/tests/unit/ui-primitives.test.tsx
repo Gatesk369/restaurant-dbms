@@ -37,13 +37,24 @@ describe("Button", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Place order" }));
     expect(onClick).not.toHaveBeenCalled();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("button")).not.toHaveAttribute("aria-busy");
   });
 
   it("is disabled and busy while a request is pending", () => {
-    render(<Button pending>Record payment</Button>);
-    const button = screen.getByRole("button", { name: "Record payment" });
+    render(
+      <Button pending pendingLabel="Recording payment…">
+        Record payment
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Recording payment…" });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveTextContent("Recording payment…");
+    const announcement = screen.getByText("Recording payment…", {
+      selector: '[aria-live="polite"]',
+    });
+    expect(button).not.toContainElement(announcement);
   });
 
   it("renders navigation as a link", () => {

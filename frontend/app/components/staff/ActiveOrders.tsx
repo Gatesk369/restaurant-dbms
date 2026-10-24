@@ -112,6 +112,13 @@ export function ActiveOrders({
                   <Button
                     variant="tonal"
                     pending={busyOrderId === order.order_id}
+                    pendingLabel={
+                      action.to === "preparing"
+                        ? "Starting preparation…"
+                        : action.to === "ready"
+                          ? "Marking ready…"
+                          : "Marking served…"
+                    }
                     disabled={busyOrderId !== null}
                     onClick={() => onAdvance(order, action.to)}
                   >

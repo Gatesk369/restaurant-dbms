@@ -35,6 +35,7 @@ interface MenuEditorProps {
   categoryNotSaved: boolean;
 
   saving: boolean;
+  disabled?: boolean;
   /** Server-side failure. */
   error: string | null;
   onSubmit: () => void;
@@ -56,6 +57,7 @@ export function MenuEditor({
   priceInvalid,
   categoryNotSaved,
   saving,
+  disabled = false,
   error,
   onSubmit,
   onCancel,
@@ -67,60 +69,67 @@ export function MenuEditor({
 
   return (
     <Panel as="form" pad="lg" gap="md" noValidate onSubmit={submit}>
-      <h2 className="m-0 text-panel font-normal">{title}</h2>
+      <fieldset disabled={saving || disabled} className="contents">
+        <h2 className="m-0 text-panel font-normal">{title}</h2>
 
-      <Field label="Item name" error={nameInvalid ? NAME_ERROR : null}>
-        <Input value={name} onChange={(e) => onName(e.target.value)} />
-      </Field>
+        <Field label="Item name" error={nameInvalid ? NAME_ERROR : null}>
+          <Input value={name} onChange={(e) => onName(e.target.value)} />
+        </Field>
 
-      <Field
-        label="Category"
-        hint={
-          categoryNotSaved ? "Categories are not stored yet, so this choice is not saved." : null
-        }
-      >
-        <Select value={category} onChange={(e) => onCategory(e.target.value as MenuCategory)}>
-          {MENU_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </Select>
-      </Field>
+        <Field
+          label="Category"
+          hint={
+            categoryNotSaved ? "Categories are not stored yet, so this choice is not saved." : null
+          }
+        >
+          <Select value={category} onChange={(e) => onCategory(e.target.value as MenuCategory)}>
+            {MENU_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </Select>
+        </Field>
 
-      <Field
-        label="Price (UGX)"
-        error={priceInvalid ? PRICE_ERROR : null}
-        hint="The database also checks this, so a zero or negative price is rejected there too."
-      >
-        <Input
-          inputMode="numeric"
-          placeholder="For example: 18000"
-          value={price}
-          onChange={(e) => onPrice(e.target.value)}
-        />
-      </Field>
+        <Field
+          label="Price (UGX)"
+          error={priceInvalid ? PRICE_ERROR : null}
+          hint="The database also checks this, so a zero or negative price is rejected there too."
+        >
+          <Input
+            inputMode="numeric"
+            placeholder="For example: 18000"
+            value={price}
+            onChange={(e) => onPrice(e.target.value)}
+          />
+        </Field>
 
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body font-bold tracking-bold">
-        <input
-          type="checkbox"
-          checked={available}
-          onChange={(e) => onAvailable(e.target.checked)}
-          className="m-0 size-5 accent-moss"
-        />
-        Available for ordering today
-      </label>
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body font-bold tracking-bold">
+          <input
+            type="checkbox"
+            checked={available}
+            onChange={(e) => onAvailable(e.target.checked)}
+            className="m-0 size-5 accent-moss"
+          />
+          Available for ordering today
+        </label>
 
-      {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FieldError>{error}</FieldError> : null}
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit" pending={saving} className="min-h-12 min-w-[140px]">
-          Save item
-        </Button>
-        <Button variant="tonal" className="min-h-12" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="submit"
+            pending={saving}
+            pendingLabel="Saving item…"
+            className="min-h-12 min-w-[140px]"
+          >
+            Save item
+          </Button>
+          <Button variant="tonal" className="min-h-12" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </fieldset>
     </Panel>
   );
 }

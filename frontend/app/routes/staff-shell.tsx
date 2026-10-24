@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useNavigate, useNavigation, useRevalidator } from "react-router";
 
 import type { Route } from "./+types/staff-shell";
 import { Sidebar } from "~/components/staff/Sidebar";
@@ -13,6 +13,8 @@ export async function clientLoader() {
 export default function StaffShell({ loaderData }: Route.ComponentProps) {
   const { staff } = loaderData;
   const navigate = useNavigate();
+  const navigation = useNavigation();
+  const revalidator = useRevalidator();
 
   function signOut() {
     clearStaffSession();
@@ -22,11 +24,14 @@ export default function StaffShell({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex flex-wrap items-stretch bg-page text-forest">
       <Sidebar staff={staff} onSignOut={signOut} />
-      <div className="min-w-0 flex-[1_1_640px]">
+      <main
+        className="min-w-0 flex-[1_1_640px]"
+        aria-busy={navigation.state !== "idle" || revalidator.state !== "idle" || undefined}
+      >
         <div className="mx-auto box-border flex max-w-content flex-col gap-6 px-6 pt-6 pb-12">
           <Outlet />
         </div>
-      </div>
+      </main>
     </div>
   );
 }

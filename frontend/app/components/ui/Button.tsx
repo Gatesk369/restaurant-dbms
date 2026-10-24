@@ -85,6 +85,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: boolean;
   /** Request in flight: disables the button and sets aria-busy. */
   pending?: boolean;
+  /** Visible text and live announcement while pending. */
+  pendingLabel?: string;
   children: ReactNode;
 }
 
@@ -93,6 +95,8 @@ export function Button({
   size,
   icon,
   pending = false,
+  pendingLabel = "Working…",
+  "aria-label": ariaLabel,
   disabled,
   className,
   type = "button",
@@ -100,15 +104,33 @@ export function Button({
   ...rest
 }: ButtonProps) {
   return (
-    <button
-      type={type}
-      disabled={disabled || pending}
-      aria-busy={pending || undefined}
-      className={buttonClass({ variant, size, icon, className })}
-      {...rest}
-    >
-      {children}
-    </button>
+    <>
+      <button
+        type={type}
+        disabled={disabled || pending}
+        aria-busy={pending || undefined}
+        aria-label={pending ? pendingLabel : ariaLabel}
+        className={buttonClass({ variant, size, icon, className })}
+        {...rest}
+      >
+        {pending ? <Spinner /> : null}
+        {pending ? <span className={icon ? "sr-only" : undefined}>{pendingLabel}</span> : children}
+      </button>
+      {/* Outside the busy button so assistive technology can announce it immediately. */}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {pending ? pendingLabel : ""}
+      </span>
+    </>
+  );
+}
+
+/** Decorative indicator; the surrounding control or status supplies its label. */
+export function Spinner() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block size-4 shrink-0 rounded-full border-2 border-current border-r-transparent motion-safe:animate-spin"
+    />
   );
 }
 

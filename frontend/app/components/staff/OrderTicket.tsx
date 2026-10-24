@@ -122,6 +122,7 @@ export function OrderTicket({
         className="w-full"
         disabled={missing !== null}
         pending={placing}
+        pendingLabel="Sending order…"
         onClick={onPlace}
       >
         Place order

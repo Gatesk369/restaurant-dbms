@@ -6,11 +6,17 @@ import { formatUgx } from "~/lib/money";
 interface PaymentQueueProps {
   orders: readonly Order[];
   selectedId: number | null;
+  disabled?: boolean;
   onSelect: (orderId: number) => void;
 }
 
 /** "Served orders": the checkout queue, oldest first. */
-export function PaymentQueue({ orders, selectedId, onSelect }: PaymentQueueProps) {
+export function PaymentQueue({
+  orders,
+  selectedId,
+  onSelect,
+  disabled = false,
+}: PaymentQueueProps) {
   return (
     <Panel>
       <PanelHeading title="Served orders" />
@@ -26,10 +32,11 @@ export function PaymentQueue({ orders, selectedId, onSelect }: PaymentQueueProps
             <button
               key={order.order_id}
               type="button"
+              disabled={disabled}
               aria-pressed={selected}
               onClick={() => onSelect(order.order_id)}
               className={cx(
-                "box-border flex min-h-16 cursor-pointer items-center justify-between gap-3 rounded-md border-0 px-3 py-2 text-left hover:brightness-95",
+                "box-border flex min-h-16 cursor-pointer items-center justify-between gap-3 rounded-md border-0 px-3 py-2 text-left not-disabled:hover:brightness-95 disabled:cursor-wait disabled:opacity-50",
                 selected ? "bg-moss text-white" : "bg-tea text-forest",
               )}
             >
