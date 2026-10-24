@@ -1,13 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { listStaffMenu } from "~/lib/api/menu";
-import {
-  changeOrderStatus,
-  listStaffOrders,
-  placeOrder,
-  resetOrderCapabilities,
-  toOrder,
-} from "~/lib/api/orders";
+import { changeOrderStatus, listStaffOrders, toOrder } from "~/lib/api/orders";
 import { fetchTables } from "~/lib/api/tables";
 
 type Reply = { status?: number; body?: unknown };
@@ -52,7 +46,6 @@ const wireOrder = {
   total: "10000.00",
 };
 
-beforeEach(() => resetOrderCapabilities());
 afterEach(() => vi.restoreAllMocks());
 
 describe("toOrder", () => {
@@ -156,68 +149,5 @@ describe("changing status", () => {
       status: 400,
       fields: { status: "Can't move an order from pending to served." },
     });
-  });
-});
-
-describe("placing an order", () => {
-  const lines = [{ menu_item_id: 6, quantity: 2, special_instructions: "no onions" }];
-
-  it("uses the staff endpoint when it exists", async () => {
-    const calls = mockFetch({ "POST /api/staff/orders/": { status: 201, body: wireOrder } });
-    const order = await placeOrder(6, lines);
-    expect(order.order_id).toBe(1047);
-    expect(calls.map((c) => c.key)).toEqual(["POST /api/staff/orders/"]);
-    expect(calls[0].body).toEqual({ table_id: 6, items: lines });
-  });
-
-  it("falls back to a customer session when the endpoint is missing, and remembers", async () => {
-    const calls = mockFetch({
-      "POST /api/staff/orders/": { status: 405, body: { detail: 'Method "POST" not allowed.' } },
-      "POST /api/customers/": {
-        status: 201,
-        body: { customer_id: 9, table_id: 6, session_token: "tok-9" },
-      },
-      "POST /api/my/orders/": { status: 201, body: wireOrder },
-    });
-
-    const order = await placeOrder(6, lines);
-    expect(order.order_id).toBe(1047);
-    expect(calls.map((c) => c.key)).toEqual([
-      "POST /api/staff/orders/",
-      "POST /api/customers/",
-      "POST /api/my/orders/",
-    ]);
-    expect(calls[1].body).toEqual({ table_id: 6 });
-    expect(calls[2].headers["X-Session-Token"]).toBe("tok-9");
-    expect(calls[2].body).toEqual({ items: lines });
-
-    // The second order skips the endpoint that is known to be missing.
-    calls.length = 0;
-    await placeOrder(6, lines);
-    expect(calls.map((c) => c.key)).toEqual(["POST /api/customers/", "POST /api/my/orders/"]);
-  });
-
-  it("does not treat a validation error as a missing endpoint", async () => {
-    const calls = mockFetch({
-      "POST /api/staff/orders/": { status: 400, body: { items: "Not available right now: Rolex" } },
-    });
-    await expect(placeOrder(6, lines)).rejects.toMatchObject({
-      status: 400,
-      fields: { items: "Not available right now: Rolex" },
-    });
-    expect(calls).toHaveLength(1);
-  });
-
-  it("does not store the temporary customer session", async () => {
-    mockFetch({
-      "POST /api/staff/orders/": { status: 405 },
-      "POST /api/customers/": {
-        status: 201,
-        body: { customer_id: 9, table_id: 6, session_token: "tok-9" },
-      },
-      "POST /api/my/orders/": { status: 201, body: wireOrder },
-    });
-    await placeOrder(6, lines);
-    expect(sessionStorage.getItem("rdbms.customer")).toBeNull();
   });
 });

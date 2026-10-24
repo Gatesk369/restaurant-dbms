@@ -1,13 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { expectElementMatchesReference } from "../visual/compare";
 import { FakeApi, type FakeOptions } from "./fake-api";
 import { PERSONAS, fontsReady, signInAs, type Persona } from "./helpers";
 
 test.use({ viewport: { width: 1360, height: 900 } });
 
-// The mock-up's persona: Okello Peter creating orders. A manager account
-// carries the same name so every button the mock-up shows is available.
 const OKELLO_AS_MANAGER: Persona = { ...PERSONAS.manager, display_name: "Okello Peter" };
 
 async function openOrders(page: Page, persona: Persona, options: FakeOptions = {}) {
@@ -20,197 +17,26 @@ async function openOrders(page: Page, persona: Persona, options: FakeOptions = {
   return api;
 }
 
-const panel = (page: Page, heading: string) =>
-  page.locator("section", {
-    has: page.getByRole("heading", { name: heading, exact: true }),
-  });
-
 const board = (page: Page) => page.getByRole("table", { name: "Active orders" });
 
-test.describe("fidelity against the mock-up", () => {
-  test("panels match the staff-orders artboard", async ({ page }) => {
-    await openOrders(page, OKELLO_AS_MANAGER);
-    await expect(board(page).getByRole("row")).toHaveCount(8);
-
-    // Reference rectangles measured from tests/visual/reference/staff-orders.png.
-    await expectElementMatchesReference(page, panel(page, "Table"), "staff-orders", {
-      x: 264,
-      y: 112,
-      width: 668,
-      height: 206,
-    });
-    // The mock-up lists Steamed Rice before Chapati in its picker (its menu
-    // screen has them the other way round); the app orders by menu id.
-    await expectElementMatchesReference(
+test.describe("customer-only order entry", () => {
+  for (const persona of Object.values(PERSONAS)) {
+    test(`${persona.role} gets the board without order entry or customer-session requests`, async ({
       page,
-      panel(page, "Menu items"),
-      "staff-orders",
-      { x: 264, y: 342, width: 668, height: 362 },
-      { maxRatio: 0.01 },
-    );
-    // The ticket shows "Draft" where the mock-up predicts "ORD-1047", and the
-    // flex layout leaves it on a fractional x, which shifts glyph edges.
-    await expectElementMatchesReference(
-      page,
-      panel(page, "New order"),
-      "staff-orders",
-      { x: 956, y: 112, width: 380, height: 577 },
-      { maxRatio: 0.01 },
-    );
-  });
-
-  test("the Active orders board matches the artboard apart from the Ready step", async ({
-    page,
-  }) => {
-    await openOrders(page, OKELLO_AS_MANAGER);
-    await expect(board(page).getByRole("row")).toHaveCount(8);
-    // The mock-up offers "Mark served" on a preparing order; the API needs
-    // "Mark ready" first (plan D6), so two buttons differ in their text.
-    await expectElementMatchesReference(
-      page,
-      panel(page, "Active orders"),
-      "staff-orders",
-      {
-        x: 264,
-        y: 863,
-        width: 1072,
-        height: 573,
-      },
-      { maxRatio: 0.01 },
-    );
-  });
-
-  test("the header chip counts free tables", async ({ page }) => {
-    await openOrders(page, OKELLO_AS_MANAGER);
-    await expect(page.getByText("5 of 12 tables free")).toBeVisible();
-  });
-});
-
-test.describe("creating an order", () => {
-  test("explains what is missing, then enables Place order", async ({ page }) => {
-    await openOrders(page, PERSONAS.waiter);
-    const place = page.getByRole("button", { name: "Place order" });
-    await expect(place).toBeDisabled();
-    await expect(page.getByText("Choose a table and add at least one item.")).toBeVisible();
-
-    await page.getByRole("button", { name: "Table 6, 4 seats" }).click();
-    await expect(page.getByText("Add at least one item.", { exact: true })).toBeVisible();
-    await expect(page.getByText("Table 6", { exact: true })).toBeVisible();
-
-    await page.getByRole("button", { name: /^Add Rolex/ }).click();
-    await page.getByRole("button", { name: /^Add Rolex/ }).click();
-    await expect(page.getByText("×2")).toBeVisible();
-    await expect(place).toBeEnabled();
-    await expect(page.getByText("UGX 10,000", { exact: true }).first()).toBeVisible();
-  });
-
-  test("steppers change and remove lines; the total follows", async ({ page }) => {
-    await openOrders(page, PERSONAS.waiter);
-    await page.getByRole("button", { name: /^Add Chapati/ }).click();
-    await page.getByRole("button", { name: "Add one Chapati" }).click();
-    await expect(page.getByText("2 × UGX 2,000")).toBeVisible();
-    await page.getByRole("button", { name: "Remove one Chapati" }).click();
-    await page.getByRole("button", { name: "Remove one Chapati" }).click();
-    await expect(
-      page.getByText("No items yet. Pick dishes and drinks from the menu."),
-    ).toBeVisible();
-  });
-
-  test("filters the picker by category", async ({ page }) => {
-    await openOrders(page, PERSONAS.waiter);
-    const categories = page.getByRole("group", { name: "Menu category" });
-    await expect(categories.getByRole("button")).toHaveText([
-      "All",
-      "Mains",
-      "Snacks",
-      "Sides",
-      "Drinks",
-    ]);
-    await categories.getByRole("button", { name: "Drinks" }).click();
-    await expect(categories.getByRole("button", { name: "Drinks" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    await expect(page.getByRole("button", { name: /^Add Rolex/ })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^Add Soda 300ml/ })).toBeVisible();
-  });
-
-  test("occupied tables cannot be picked", async ({ page }) => {
-    await openOrders(page, PERSONAS.waiter);
-    await expect(page.getByRole("button", { name: "Table 2, occupied" })).toBeDisabled();
-    await expect(page.getByRole("button", { name: "Table 1, 2 seats" })).toBeEnabled();
-  });
-
-  test("places an order through the customer-session workaround", async ({ page }) => {
-    const api = await openOrders(page, PERSONAS.waiter);
-    await page.getByRole("button", { name: "Table 6, 4 seats" }).click();
-    await page.getByRole("button", { name: /^Add Rolex/ }).click();
-    await page.getByRole("button", { name: /^Add Rolex/ }).click();
-    await page.getByLabel("Special instructions").fill("no onions");
-    await page.getByRole("button", { name: "Place order" }).click();
-
-    await expect(
-      page.getByText("Order ORD-1047 placed for Table 6. The kitchen can see it as pending."),
-    ).toBeVisible();
-
-    // What was sent.
-    expect(api.callsTo("POST", "/api/staff/orders/")).toHaveLength(1);
-    const customer = api.callsTo("POST", "/api/customers/")[0];
-    expect(customer.body).toEqual({ table_id: 6 });
-    const placed = api.callsTo("POST", "/api/my/orders/")[0];
-    expect(placed.sessionToken).toBe("token-5000");
-    expect(placed.body).toEqual({
-      items: [{ menu_item_id: 6, quantity: 2, special_instructions: "no onions" }],
+    }) => {
+      const api = await openOrders(page, persona);
+      await expect(board(page)).toBeVisible();
+      await expect(page.getByRole("heading", { name: "New order" })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Menu items" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Place order" })).toHaveCount(0);
+      await expect(page.getByText(/tables free/)).toHaveCount(0);
+      expect(api.callsTo("GET", "/api/staff/menu/")).toHaveLength(0);
+      expect(api.callsTo("GET", "/api/tables/")).toHaveLength(0);
+      expect(api.callsTo("POST", "/api/staff/orders/")).toHaveLength(0);
+      expect(api.callsTo("POST", "/api/customers/")).toHaveLength(0);
+      expect(api.callsTo("POST", "/api/my/orders/")).toHaveLength(0);
     });
-
-    // The form resets and the board refreshes.
-    await expect(page.getByText("Not chosen")).toBeVisible();
-    await expect(page.getByLabel("Special instructions")).toHaveValue("");
-    await expect(board(page).getByRole("cell", { name: "ORD-1047" })).toBeVisible();
-
-    // Database activity, newest first.
-    const log = page.locator("section", {
-      has: page.getByRole("heading", { name: "Database activity" }),
-    });
-    await expect(log.getByRole("listitem")).toHaveText([
-      /ORDER_ITEMS: 1 row inserted, item_subtotal = quantity × price/,
-      /TABLES: Table 6 free_status set to FALSE/,
-      /ORDERS: ORD-1047 inserted with status pending/,
-    ]);
-  });
-
-  test("uses the staff endpoint once the backend has it", async ({ page }) => {
-    const api = await openOrders(page, PERSONAS.waiter, { staffCreate: true });
-    await page.getByRole("button", { name: "Table 1, 2 seats" }).click();
-    await page.getByRole("button", { name: /^Add Chapati/ }).click();
-    await page.getByRole("button", { name: "Place order" }).click();
-    await expect(page.getByText(/Order ORD-1047 placed for Table 1/)).toBeVisible();
-
-    expect(api.callsTo("POST", "/api/staff/orders/")).toHaveLength(1);
-    expect(api.callsTo("POST", "/api/customers/")).toHaveLength(0);
-    expect(api.callsTo("POST", "/api/my/orders/")).toHaveLength(0);
-  });
-
-  test("shows the server's reason when an order is rejected", async ({ page }) => {
-    await openOrders(page, PERSONAS.waiter, { placeError: "Not available right now: Rolex" });
-    await page.getByRole("button", { name: "Table 6, 4 seats" }).click();
-    await page.getByRole("button", { name: /^Add Rolex/ }).click();
-    await page.getByRole("button", { name: "Place order" }).click();
-    await expect(page.getByRole("alert")).toHaveText("Error: Not available right now: Rolex");
-    // The cart is kept so the waiter can adjust it.
-    await expect(page.getByText("×1")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Place order" })).toBeEnabled();
-  });
-});
-
-test.describe("falling back without a tables endpoint", () => {
-  test("derives occupancy from the orders it can see", async ({ page }) => {
-    await openOrders(page, OKELLO_AS_MANAGER, { tablesEndpoint: false });
-    // Seats are unknown, so tiles say Free or Occupied.
-    await expect(page.getByRole("button", { name: "Table 2, occupied" })).toBeDisabled();
-    await expect(page.getByRole("button", { name: "Table 1, free" })).toBeEnabled();
-    await expect(page.getByText("5 of 12 tables free")).toBeVisible();
-  });
+  }
 });
 
 test.describe("the Active orders board", () => {
@@ -239,7 +65,7 @@ test.describe("the Active orders board", () => {
     await expect(rows.nth(7)).toContainText("ORD-1039");
   });
 
-  test("lets the manager move an order along and logs the trigger effect", async ({ page }) => {
+  test("lets the manager move an order along and confirms the result", async ({ page }) => {
     const api = await openOrders(page, OKELLO_AS_MANAGER);
     const row = board(page).getByRole("row", { name: /ORD-1044/ });
     await expect(row.getByText("Pending", { exact: true })).toBeVisible();
@@ -250,7 +76,7 @@ test.describe("the Active orders board", () => {
     expect(api.callsTo("POST", "/api/staff/orders/1044/status/")[0].body).toEqual({
       status: "preparing",
     });
-    await expect(page.getByText("ORDERS: ORD-1044 order_status set to preparing")).toBeVisible();
+    await expect(page.getByText("Order ORD-1044 marked preparing.")).toBeVisible();
 
     await row.getByRole("button", { name: "Mark ready" }).click();
     await expect(row.getByText("Ready", { exact: true })).toBeVisible();
@@ -284,7 +110,9 @@ test.describe("each role sees only what it can do", () => {
     api.orders = api.orders.map((o) =>
       o.order_id === 1043
         ? { ...o, order_status: "ready" as const, staff_id: PERSONAS.waiter.staff_id }
-        : o,
+        : o.order_id === 1044
+          ? { ...o, staff_id: PERSONAS.waiter.staff_id }
+          : o,
     );
     await api.install(page);
     await signInAs(page, PERSONAS.waiter);
@@ -297,9 +125,14 @@ test.describe("each role sees only what it can do", () => {
     await expect(confirmed.getByRole("button")).toHaveCount(0);
     await expect(confirmed.getByText("Waiting for the kitchen")).toBeVisible();
 
-    const served = board(page).getByRole("row", { name: /ORD-1045/ });
-    await expect(served.getByText("Awaiting payment")).toBeVisible();
-    await expect(served.getByRole("link")).toHaveCount(0);
+    await expect(board(page).getByRole("row", { name: /ORD-1046/ })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Assigned orders" })).toBeVisible();
+    await own.getByRole("button", { name: "Mark served" }).click();
+    await expect(own.getByText("Awaiting payment")).toBeVisible();
+    await expect(own.getByRole("link")).toHaveCount(0);
+    expect(api.callsTo("POST", "/api/staff/orders/1043/status/")[0].body).toEqual({
+      status: "served",
+    });
   });
 
   test("kitchen staff get the board and the kitchen buttons only", async ({ page }) => {
@@ -333,6 +166,29 @@ test.describe("each role sees only what it can do", () => {
         .getByRole("button"),
     ).toHaveCount(0);
   });
+});
+
+test("assigned orders show special instructions and an empty state for unassigned waiters", async ({
+  page,
+}) => {
+  const api = new FakeApi();
+  api.orders = api.orders.map((o) => ({
+    ...o,
+    staff_id: PERSONAS.waiter.staff_id,
+    items: o.items.map((item) => ({ ...item, special_instructions: "No onions" })),
+  }));
+  await api.install(page);
+  await signInAs(page, PERSONAS.waiter);
+  await page.goto("/orders");
+  await expect(
+    board(page)
+      .getByText(/No onions/)
+      .first(),
+  ).toBeVisible();
+  api.orders = api.orders.map((o) => ({ ...o, staff_id: 9999 }));
+  await page.reload();
+  await expect(page.getByText(/No assigned orders match this filter/)).toBeVisible();
+  await expect(board(page).getByRole("row")).toHaveCount(1);
 });
 
 test.describe("when the session ends", () => {
