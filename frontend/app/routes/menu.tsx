@@ -78,6 +78,7 @@ export default function Menu() {
   );
 
   function openNew() {
+    if (saving || busyId !== null) return;
     setEditing("new");
     setName("");
     setFormCategory("Mains");
@@ -89,6 +90,7 @@ export default function Menu() {
   }
 
   function openEdit(item: MenuItem) {
+    if (saving || busyId !== null) return;
     setEditing(item.menu_item_id);
     setName(item.item_name);
     setFormCategory(categoryOf(item) ?? "Mains");
@@ -103,7 +105,7 @@ export default function Menu() {
   const priceInvalid = tried && !isValidPrice(price);
 
   async function save() {
-    if (editing === null || saving) return;
+    if (editing === null || saving || busyId !== null) return;
     if (!isValidItemName(name) || !isValidPrice(price)) {
       setTried(true);
       return;
@@ -136,6 +138,7 @@ export default function Menu() {
   }
 
   async function toggleArchive(item: MenuItem) {
+    if (saving || busyId !== null) return;
     const archiving = itemStatus(item, features) !== "archived";
     setBusyId(item.menu_item_id);
     setError(null);
@@ -160,7 +163,7 @@ export default function Menu() {
   return (
     <>
       <PageHeader title={screen.title} subtitle={screen.subtitle}>
-        <Button size="lg" onClick={openNew}>
+        <Button size="lg" onClick={openNew} disabled={saving || busyId !== null}>
           <Icon name="add" />
           Add item
         </Button>
@@ -182,6 +185,7 @@ export default function Menu() {
           onCategory={setCategory}
           editingId={typeof editing === "number" ? editing : null}
           busyId={busyId}
+          disabled={saving || busyId !== null}
           onEdit={openEdit}
           onToggleArchive={(item) => void toggleArchive(item)}
         />
@@ -204,6 +208,7 @@ export default function Menu() {
               priceInvalid={priceInvalid}
               categoryNotSaved={!features.category}
               saving={saving}
+              disabled={busyId !== null}
               error={error}
               onSubmit={() => void save()}
               onCancel={() => {

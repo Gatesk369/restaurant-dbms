@@ -5,10 +5,12 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
-import { Button } from "./components/ui/Button";
+import { Button, Spinner } from "./components/ui/Button";
+import { SCREENS } from "./lib/access";
 import { ApiError } from "./lib/api/client";
 import "./app.css";
 
@@ -31,13 +33,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const navigation = useNavigation();
+  const destination = SCREENS.find((screen) => screen.path === navigation.location?.pathname);
+  const label = `Loading ${destination?.title ?? (navigation.location?.pathname === "/station" ? "menu" : "sign-in")}…`;
+  return (
+    <>
+      {navigation.state === "loading" ? (
+        <p
+          role="status"
+          className="fixed top-3 left-1/2 z-50 m-0 flex -translate-x-1/2 items-center gap-2 rounded-md bg-forest px-4 py-3 text-body font-bold text-white shadow-toast"
+        >
+          <Spinner />
+          {label}
+        </p>
+      ) : null}
+      <Outlet />
+    </>
+  );
 }
 
 export function HydrateFallback() {
   return (
-    <p role="status" className="p-6 text-body text-moss">
-      Loading…
+    <p role="status" aria-busy="true" className="flex items-center gap-2 p-6 text-body text-moss">
+      <Spinner /> Loading…
     </p>
   );
 }
@@ -63,7 +81,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return (
     <main className="mx-auto max-w-signin p-6">
       <h1 className="text-title font-normal">{message}</h1>
-      <p className="mt-1 text-body tracking-body text-moss">{details}</p>
+      <p role="alert" className="mt-1 text-body tracking-body text-moss">
+        {details}
+      </p>
       {error instanceof ApiError ? (
         <Button className="mt-4" onClick={() => window.location.reload()}>
           Try again

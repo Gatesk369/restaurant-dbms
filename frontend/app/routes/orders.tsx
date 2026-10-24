@@ -72,8 +72,11 @@ export default function Orders() {
           : "Error: Something went wrong. Please try again.",
       );
     } finally {
-      setBusyOrderId(null);
-      void revalidator.revalidate();
+      try {
+        await revalidator.revalidate();
+      } finally {
+        setBusyOrderId(null);
+      }
     }
   }
 

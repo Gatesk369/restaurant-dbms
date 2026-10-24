@@ -29,6 +29,7 @@ interface MenuListProps {
   editingId: number | null;
   /** Item with a request in flight. */
   busyId: number | null;
+  disabled?: boolean;
   onEdit: (item: MenuItem) => void;
   onToggleArchive: (item: MenuItem) => void;
 }
@@ -47,6 +48,7 @@ export function MenuList({
   onCategory,
   editingId,
   busyId,
+  disabled = false,
   onEdit,
   onToggleArchive,
 }: MenuListProps) {
@@ -124,6 +126,7 @@ export function MenuList({
                 <Button
                   variant="tonal"
                   size="row"
+                  disabled={disabled}
                   aria-label={`Edit ${item.item_name}`}
                   onClick={() => onEdit(item)}
                 >
@@ -134,8 +137,10 @@ export function MenuList({
                   <Button
                     variant="tonal"
                     size="row"
+                    pendingLabel="Restoring item…"
                     aria-label={`Restore ${item.item_name}`}
                     pending={busyId === item.menu_item_id}
+                    disabled={disabled}
                     onClick={() => onToggleArchive(item)}
                   >
                     <Icon name="restore" size={18} />
@@ -145,8 +150,10 @@ export function MenuList({
                   <Button
                     variant="tonal"
                     size="row"
+                    pendingLabel="Archiving item…"
                     aria-label={`Archive ${item.item_name}`}
                     pending={busyId === item.menu_item_id}
+                    disabled={disabled}
                     onClick={() => onToggleArchive(item)}
                   >
                     <Icon name="archive" size={18} />

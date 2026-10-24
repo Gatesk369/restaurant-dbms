@@ -44,7 +44,7 @@ export function DoneStep({
   return (
     <div className="box-border flex h-[728px] gap-12 px-12 py-8">
       <div className="flex min-w-0 flex-[1.2_1_0] flex-col gap-6">
-        <div className="flex items-center gap-4">
+        <div role="status" className="flex items-center gap-4">
           <span className="inline-flex size-14 flex-none items-center justify-center rounded-full bg-moss text-white">
             <Icon name="check" size={28} />
           </span>
@@ -64,7 +64,12 @@ export function DoneStep({
             This order was cancelled. Please speak to a waiter.
           </p>
         ) : (
-          <ol aria-label="Order status" className="m-0 flex list-none flex-col gap-2 p-0">
+          <ol
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="Order status"
+            className="m-0 flex list-none flex-col gap-2 p-0"
+          >
             {TRACKER.map((row, i) => {
               const done = i < step;
               const current = i === step;
