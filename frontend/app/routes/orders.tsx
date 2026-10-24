@@ -10,7 +10,7 @@ import { getScreen } from "~/lib/access";
 import { ApiError } from "~/lib/api/client";
 import { changeOrderStatus, listStaffOrders } from "~/lib/api/orders";
 import type { Order, OrderStatus } from "~/lib/api/types";
-import { requireStaffSession, rethrowApiError } from "~/lib/auth-guard";
+import { requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
 import { isActive, nextAction, statusLabel, type Filter } from "~/lib/domain/order-status";
 import { usePoll } from "~/lib/hooks/use-poll";
 import { isSameKampalaDay } from "~/lib/time";
@@ -25,7 +25,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function clientLoader() {
-  const { staff } = requireStaffSession();
+  const { staff } = requireStaffScreen("orders");
   try {
     // The API scopes wait staff to assigned orders, kitchen to open orders,
     // and cashiers to served, unpaid orders. Managers can see the whole board.

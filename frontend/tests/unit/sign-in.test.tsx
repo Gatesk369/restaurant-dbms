@@ -136,8 +136,10 @@ describe("startup menu", () => {
 
     expect(screen.getByRole("link", { name: /Orders/ })).toHaveAttribute("href", "/orders");
     expect(screen.queryByRole("link", { name: /Payments/ })).toBeNull();
-    expect(screen.getByText("Payments")).toBeInTheDocument();
-    expect(screen.getAllByText("Locked for Wait Staff")).toHaveLength(3);
+    expect(screen.queryByText("Payments")).toBeNull();
+    expect(screen.queryByText("Menu management")).toBeNull();
+    expect(screen.queryByText("Reports")).toBeNull();
+    expect(screen.queryByText(/Locked for/)).toBeNull();
   });
 
   it("opens straight to the menu when a session already exists", async () => {

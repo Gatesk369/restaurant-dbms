@@ -7,9 +7,8 @@ import { StartupTile } from "~/components/staff/StartupTile";
 import { Button } from "~/components/ui/Button";
 import { Field, FieldError, Input } from "~/components/ui/Field";
 import { Icon } from "~/components/ui/Icon";
-import { LockedTile } from "~/components/ui/LockedTile";
 import { RadioCard, RadioCardGroup } from "~/components/ui/RadioCard";
-import { SCREENS, canAccess } from "~/lib/access";
+import { screensForRole } from "~/lib/access";
 import { ApiError } from "~/lib/api/client";
 import { login, staffName } from "~/lib/api/auth";
 import { ROLE_LABELS, type Role } from "~/lib/api/types";
@@ -173,19 +172,14 @@ function StartupMenu({
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
-        {SCREENS.map((screen) => (
-          <div key={screen.key}>
-            {canAccess(staff.role, screen.key) ? (
-              <StartupTile
-                to={screen.path}
-                title={screen.title}
-                description={screen.description}
-                icon={screen.icon}
-              />
-            ) : (
-              <LockedTile title={screen.title} roleLabel={ROLE_LABELS[staff.role]} />
-            )}
-          </div>
+        {screensForRole(staff.role).map((screen) => (
+          <StartupTile
+            key={screen.key}
+            to={screen.path}
+            title={screen.title}
+            description={screen.description}
+            icon={screen.icon}
+          />
         ))}
       </div>
     </div>

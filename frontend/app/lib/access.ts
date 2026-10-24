@@ -21,7 +21,7 @@ export interface Screen {
 /**
  * Screens in sidebar order, and who may use them (design document, "Users and
  * roles"). The API enforces the same rules; this only decides what the UI
- * offers and what a locked screen says.
+ * offers; hidden navigation never replaces API authorization.
  */
 export const SCREENS: readonly Screen[] = [
   {
@@ -76,4 +76,9 @@ export function getScreen(key: ScreenKey): Screen {
 
 export function canAccess(role: Role, key: ScreenKey): boolean {
   return getScreen(key).roles.includes(role);
+}
+
+/** Destinations available to the authenticated role, in navigation order. */
+export function screensForRole(role: Role): readonly Screen[] {
+  return SCREENS.filter((screen) => canAccess(role, screen.key));
 }

@@ -1,6 +1,8 @@
 import { ButtonLink, Button } from "~/components/ui/Button";
 import { Icon } from "~/components/ui/Icon";
 import { Panel } from "~/components/ui/Panel";
+import { canAccess } from "~/lib/access";
+import type { Role } from "~/lib/api/types";
 import { formatUgx } from "~/lib/money";
 
 export interface Receipt {
@@ -15,6 +17,7 @@ export interface Receipt {
 interface ReceiptPanelProps {
   receipt: Receipt;
   cashier: string;
+  role: Role;
   roleLabel: string;
   /** More served orders are waiting: offer "Next order". */
   moreWaiting: boolean;
@@ -25,6 +28,7 @@ interface ReceiptPanelProps {
 export function ReceiptPanel({
   receipt,
   cashier,
+  role,
   roleLabel,
   moreWaiting,
   onNext,
@@ -68,9 +72,11 @@ export function ReceiptPanel({
             Back to orders
           </ButtonLink>
         )}
-        <ButtonLink to="/reports" variant="tonal" className="min-h-12">
-          See sales report
-        </ButtonLink>
+        {canAccess(role, "reports") ? (
+          <ButtonLink to="/reports" variant="tonal" className="min-h-12">
+            See sales report
+          </ButtonLink>
+        ) : null}
       </div>
     </Panel>
   );

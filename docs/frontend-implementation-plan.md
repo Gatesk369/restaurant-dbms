@@ -23,6 +23,24 @@ Contents: [1 Goals](#1-goals-and-what-accurate-means) ·
 
 ---
 
+## Current access update — issue #36 (23 October 2026)
+
+This update supersedes the original locked-tile navigation specification below.
+Sidebar links and startup tiles contain only screens permitted by the signed-in
+staff role: cashier → Orders/Payments; wait staff and kitchen → Orders;
+manager → all four screens. Locked feature tiles are not part of operational
+screens. The startup menu remains until the separate #37 change.
+
+Every protected screen checks its permission in its loader before requesting
+screen data. Forbidden direct URLs redirect to the first permitted screen
+(currently Orders); unauthenticated visitors still return to sign-in. The API
+continues to enforce its own role permissions.
+
+Cashier receipts omit manager-only sales-report links. Managers can review
+payment queues and order summaries but do not see cashier-only payment-entry
+controls. New visual baselines cover intentionally changed navigation and
+receipt layouts; original mock-up comparisons remain for unchanged regions.
+
 ## Current workflow update — issue #35 (23 October 2026)
 
 This update supersedes the original staff order-entry mock-ups, G3 workaround,
@@ -331,13 +349,13 @@ mock-ups.
 
 **Sign-in state**
 
-| Element      | Detail                                                                                                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Title / lede | "Sign in" / "Choose your role. The startup menu then shows the screens that role can use."                                                                                                       |
+| Element      | Detail                                                                                                                                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Title / lede | "Sign in" / "Choose your role. The startup menu then shows the screens that role can use."                                                                                                               |
 | Role picker  | Legend "Sign in as"; 4 radio cards in 2 columns: Cashier (Takes payments), Wait Staff (Serves assigned orders), Kitchen Staff (Updates order status), Manager (Menu and reports). Cashier selected first |
-| Fields       | Username, Password (labels above, 48px inputs) side by side, wrapping under 440px                                                                                                                |
-| Error        | `Error: enter your username and a password of at least 4 characters.` with icon, `role="alert"`, shown on submit only                                                                            |
-| Submit       | "Sign in", primary, `min-width:160`                                                                                                                                                              |
+| Fields       | Username, Password (labels above, 48px inputs) side by side, wrapping under 440px                                                                                                                        |
+| Error        | `Error: enter your username and a password of at least 4 characters.` with icon, `role="alert"`, shown on submit only                                                                                    |
+| Submit       | "Sign in", primary, `min-width:160`                                                                                                                                                                      |
 
 Behaviour:
 
@@ -449,13 +467,13 @@ Receipt or the all-paid panel.
 
 | State         | Content                                                                                                                                                                                                                                                                                                                                                |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Queue         | Buttons `ORD-1039 · Table 5`, customer caption, total; selected = moss/white (`aria-pressed`). Empty: "Nothing to collect. Orders appear here when the assigned waiter marks them served."                                                                                                                                                                     |
+| Queue         | Buttons `ORD-1039 · Table 5`, customer caption, total; selected = moss/white (`aria-pressed`). Empty: "Nothing to collect. Orders appear here when the assigned waiter marks them served."                                                                                                                                                             |
 | Checkout      | Title `ORD-1045 · Table 7`, meta `Ssemakula David · served by Okello P.`, chip "Served"; items table (Item, Qty, Price, Subtotal); "Total due" (32/700); payment method radio cards **Cash** ("Count the notes and give change") and **Mobile money** ("MTN or Airtel"); footer "Recorded by **{name}**, Cashier" and **Record payment · UGX {total}** |
 | Cash fields   | "Amount received (UGX)" (digits only, placeholder "For example: 100000"); quick chips **Exact amount**, **UGX 50,000**, **UGX 100,000**; "Change due" box                                                                                                                                                                                              |
 | Cash error    | `Error: UGX 21,000 short of the total. Ask for the full amount.` (also sets `aria-invalid`); payment is not sent                                                                                                                                                                                                                                       |
 | Mobile fields | Network select (MTN Mobile Money, Airtel Money), "Customer phone number" (placeholder "07XX XXX XXX"); error `Error: enter a 10-digit number that starts with 07.`; note "The customer approves the request on their phone. Record the payment once the confirmation message arrives."                                                                 |
 | Receipt       | "Payment recorded", `PAY-0388 for ORD-1045`, definition list (Table "Table 7 is free again", Method, Amount, Change given, Recorded by), **Next order** or **Back to orders**, **See sales report**                                                                                                                                                    |
-| All paid      | "All served orders are paid" / "New orders show up here once the assigned waiter marks them served." / **Go to orders**                                                                                                                                                                                                                                        |
+| All paid      | "All served orders are paid" / "New orders show up here once the assigned waiter marks them served." / **Go to orders**                                                                                                                                                                                                                                |
 
 Rules: phone is valid when, after removing spaces, it matches `^07\d{8}$`.
 Cash is valid when `received >= total`. Errors appear only after a failed

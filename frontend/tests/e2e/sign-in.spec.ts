@@ -149,9 +149,7 @@ test.describe("startup menu", () => {
       }
       await expect(main.getByRole("link")).toHaveCount(links.length);
       for (const name of locked) {
-        const tile = main.getByText(name, { exact: true }).locator("..");
-        await expect(tile).toContainText(`Locked for ${label}`);
-        await expect(tile).toHaveCSS("border-top-style", "dashed");
+        await expect(main.getByText(name, { exact: true })).toHaveCount(0);
       }
 
       await expect(main.getByRole("link", { name: /^Orders/ })).toContainText(
@@ -162,6 +160,7 @@ test.describe("startup menu", () => {
       ).toHaveCount(0);
       await fontsReady(page);
       await blur(page);
+      await expect(main.getByText(/Locked for/)).toHaveCount(0);
       await page.mouse.move(0, 0);
       // Issue #35 deliberately changed the Orders tile copy and its wrapping.
       // Keep the original mock-ups intact and compare the revised UI separately.

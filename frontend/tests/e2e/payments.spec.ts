@@ -15,7 +15,11 @@ async function openPayments(
   await api.install(page);
   await signInAs(page, persona);
   await page.goto("/payments");
-  await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
+  if (persona.role === "wait_staff" || persona.role === "kitchen") {
+    await expect(page).toHaveURL(/\/orders$/);
+  } else {
+    await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
+  }
   await fontsReady(page);
   return api;
 }
@@ -95,11 +99,9 @@ test.describe("fidelity against the mock-up", () => {
     await page.getByLabel("Customer phone number").fill("0772123456");
     await record(page).click();
     await expect(page.getByText("Payment recorded", { exact: true })).toBeVisible();
-    await expectElementMatchesReference(page, receiptPanel(page), "staff-payments-receipt", {
-      x: 677,
-      y: 112,
-      width: 659,
-      height: 330,
+    await expect(receiptPanel(page).getByRole("link", { name: "See sales report" })).toHaveCount(0);
+    await expect(receiptPanel(page)).toHaveScreenshot("cashier-receipt.png", {
+      animations: "disabled",
     });
     await expectElementMatchesReference(page, queue(page), "staff-payments-receipt", {
       x: 264,
@@ -270,10 +272,7 @@ test.describe("edge cases", () => {
       "href",
       "/orders",
     );
-    await expect(page.getByRole("link", { name: "See sales report" })).toHaveAttribute(
-      "href",
-      "/reports",
-    );
+    await expect(page.getByRole("link", { name: "See sales report" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Next order" })).toHaveCount(0);
   });
 
@@ -296,6 +295,25 @@ test.describe("edge cases", () => {
     await expect(page.getByText("0 awaiting payment")).toBeVisible();
   });
 
+  for (const persona of [PERSONAS.cashier, PERSONAS.manager]) {
+    test(`${persona.role} empty payment queue offers only permitted navigation`, async ({
+      page,
+    }) => {
+      await openPayments(page, persona, { orders: [] });
+      await expect(page.getByRole("heading", { name: "All served orders are paid" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Go to orders" })).toHaveAttribute(
+        "href",
+        "/orders",
+      );
+      await expect(page.getByRole("link", { name: "See sales report" })).toHaveCount(0);
+      await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link")).toHaveText(
+        persona.role === "cashier"
+          ? ["Orders", "Payments"]
+          : ["Orders", "Payments", "Menu", "Reports"],
+      );
+    });
+  }
+
   test("shows the server's reason when the order was already paid", async ({ page }) => {
     await openPayments(page, PERSONAS.cashier, {
       payError: { status: 409, detail: "This order has already been paid." },
@@ -311,13 +329,15 @@ test.describe("edge cases", () => {
     await openPayments(page, PERSONAS.manager, { queueView: "all" });
     // The manager's queue is every served order from today (no paid flag yet).
     await expect(queue(page).getByRole("button")).toHaveCount(4);
-    await expect(record(page)).toBeDisabled();
-    await expect(page.getByText("Only cashiers can record payments.")).toBeVisible();
+    await expect(record(page)).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Payment method" })).toHaveCount(0);
+    await expect(checkout(page).getByRole("table", { name: "Order items" })).toBeVisible();
   });
 
-  test("locks the screen for wait staff without loading the queue", async ({ page }) => {
-    const api = await openPayments(page, PERSONAS.waiter);
-    await expect(page.getByText("Locked for Wait Staff")).toBeVisible();
-    expect(api.callsTo("GET", "/api/staff/orders/")).toHaveLength(0);
+  test("redirects wait staff to Orders without displaying checkout", async ({ page }) => {
+    await openPayments(page, PERSONAS.waiter);
+    await expect(page).toHaveURL(/\/orders$/);
+    await expect(record(page)).toHaveCount(0);
+    await expect(page.getByText(/Locked for/)).toHaveCount(0);
   });
 });

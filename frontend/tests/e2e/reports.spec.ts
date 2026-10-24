@@ -23,7 +23,11 @@ async function openReports(
   await page.clock.setFixedTime(new Date(SUNDAY));
   await signInAs(page, persona);
   await page.goto(path);
-  await expect(page.getByRole("heading", { level: 1, name: "Reports" })).toBeVisible();
+  if (persona.role === "manager") {
+    await expect(page.getByRole("heading", { level: 1, name: "Reports" })).toBeVisible();
+  } else {
+    await expect(page).toHaveURL(/\/orders$/);
+  }
   await fontsReady(page);
   return api;
 }
@@ -304,9 +308,10 @@ test.describe("table turnover columns", () => {
 });
 
 test.describe("access", () => {
-  test("is locked for a cashier and loads nothing", async ({ page }) => {
+  test("redirects a cashier before loading protected data", async ({ page }) => {
     const api = await openReports(page, FULL, PERSONAS.cashier);
-    await expect(page.getByText("Locked for Cashier")).toBeVisible();
+    await expect(page).toHaveURL(/\/orders$/);
+    await expect(page.getByText(/Locked for/)).toHaveCount(0);
     expect(api.callsTo("GET", "/api/staff/reports/daily-sales/")).toHaveLength(0);
   });
 
