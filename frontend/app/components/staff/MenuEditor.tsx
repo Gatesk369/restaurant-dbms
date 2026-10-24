@@ -141,7 +141,9 @@ export function MenuEditor({
               Remove image
             </Button>
           ) : (
-            <span className="text-label tracking-caption text-moss">Placeholder shown on the station</span>
+            <span className="text-label tracking-caption text-moss">
+              Placeholder shown on the station
+            </span>
           )}
         </div>
 

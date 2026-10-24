@@ -178,33 +178,34 @@ export default function Menu() {
     setImageUrlError(null);
   }
 
-  const editor = editing === null ? null : (
-    <MenuEditor
-      title={editing === "new" ? "Add item" : `Edit ${menuItemNumber(editing)}`}
-      name={name}
-      onName={setName}
-      category={formCategory}
-      onCategory={setFormCategory}
-      price={price}
-      onPrice={(value) => setPrice(value.replace(/[^0-9-]/g, ""))}
-      available={available}
-      onAvailable={setAvailable}
-      imageUrl={imageUrl}
-      onImageUrl={(value) => {
-        setImageUrl(value);
-        setImageUrlError(null);
-      }}
-      imageUrlError={imageUrlError}
-      nameInvalid={nameInvalid}
-      priceInvalid={priceInvalid}
-      categoryNotSaved={!features.category}
-      saving={saving}
-      disabled={busyId !== null}
-      error={error}
-      onSubmit={() => void save()}
-      onCancel={cancelEdit}
-    />
-  );
+  const editor =
+    editing === null ? null : (
+      <MenuEditor
+        title={editing === "new" ? "Add item" : `Edit ${menuItemNumber(editing)}`}
+        name={name}
+        onName={setName}
+        category={formCategory}
+        onCategory={setFormCategory}
+        price={price}
+        onPrice={(value) => setPrice(value.replace(/[^0-9-]/g, ""))}
+        available={available}
+        onAvailable={setAvailable}
+        imageUrl={imageUrl}
+        onImageUrl={(value) => {
+          setImageUrl(value);
+          setImageUrlError(null);
+        }}
+        imageUrlError={imageUrlError}
+        nameInvalid={nameInvalid}
+        priceInvalid={priceInvalid}
+        categoryNotSaved={!features.category}
+        saving={saving}
+        disabled={busyId !== null}
+        error={error}
+        onSubmit={() => void save()}
+        onCancel={cancelEdit}
+      />
+    );
 
   return (
     <>
@@ -236,11 +237,8 @@ export default function Menu() {
           onEdit={openEdit}
           onToggleArchive={(item) => void toggleArchive(item)}
         />
-
       </div>
-      {editing !== null ? (
-        <MenuEditorDialog onClose={cancelEdit}>{editor}</MenuEditorDialog>
-      ) : null}
+      {editing !== null ? <MenuEditorDialog onClose={cancelEdit}>{editor}</MenuEditorDialog> : null}
     </>
   );
 }

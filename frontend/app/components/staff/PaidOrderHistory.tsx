@@ -19,7 +19,9 @@ export function PaidOrderTable({ page }: { page: PaymentHistoryPage }) {
         <DataCell header>Waiter</DataCell>
         <DataCell header>Cashier</DataCell>
         <DataCell header>Method</DataCell>
-        <DataCell header align="right">Amount (UGX)</DataCell>
+        <DataCell header align="right">
+          Amount (UGX)
+        </DataCell>
       </DataHeader>
       {page.rows.map((row) => (
         <DataRow key={row.payment_id} density="compact" tabular>
@@ -88,7 +90,8 @@ export function PaidOrderHistory({
             Previous
           </Button>
           <span className="text-label tabular-nums">
-            {page.total ? page.offset + 1 : 0}–{Math.min(page.offset + page.limit, page.total)} of {page.total}
+            {page.total ? page.offset + 1 : 0}–{Math.min(page.offset + page.limit, page.total)} of{" "}
+            {page.total}
           </span>
           <Button
             size="md"

@@ -35,9 +35,8 @@ export async function clientLoader() {
     // and cashiers to served, unpaid orders. Managers can see the whole board.
     const orders = await listStaffOrders(BOARD_STATUSES);
     const today = kampalaDate();
-    const todayHistory = staff.role === "manager"
-      ? await loadPaymentHistory({ from: today, to: today }, 0, 10)
-      : null;
+    const todayHistory =
+      staff.role === "manager" ? await loadPaymentHistory({ from: today, to: today }, 0, 10) : null;
     return { staff, orders, todayHistory, today };
   } catch (error) {
     return rethrowApiError(error);
@@ -114,7 +113,8 @@ export default function Orders() {
           <PaidOrderHistory page={todayHistory} title="Paid orders today" compact />
           <Panel pad="md" className="mt-3">
             <p className="m-0 text-body tracking-body">
-              Showing paid orders for {today}. View the full order history and choose any date range in Reports.
+              Showing paid orders for {today}. View the full order history and choose any date range
+              in Reports.
             </p>
             <ButtonLink to="/reports#history" variant="tonal" className="self-start">
               View full history in reports

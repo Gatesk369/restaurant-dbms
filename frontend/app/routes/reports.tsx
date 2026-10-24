@@ -49,7 +49,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const to = params.get("to") || defaults.to;
   const custom = !requestedPreset && Boolean(params.get("from") || params.get("to"));
   const offset = Math.max(0, Number(params.get("offset")) || 0);
-  const days = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
+  const days =
+    Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
   const periodMode: RangeKey = custom && days > 14 ? "month" : "week";
   try {
     const selectedRange = { from, to };
@@ -82,7 +83,8 @@ export default function Reports() {
 
   const view = useMemo(() => {
     if (!bundle) return null;
-    const periods = periodMode === "week" ? dailyPeriods(bundle.daily) : weeklyPeriods(bundle.daily);
+    const periods =
+      periodMode === "week" ? dailyPeriods(bundle.daily) : weeklyPeriods(bundle.daily);
     const slices = toSlices(bundle.methods);
     return {
       periods,
@@ -104,18 +106,48 @@ export default function Reports() {
       >
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-wrap gap-2">
-            <Button size="md" variant="tonal" onClick={() => navigate(`?from=${today}&to=${today}`)}>Today</Button>
-            <Button size="md" variant="tonal" onClick={() => navigate(`?from=${calendarMonth.from}&to=${calendarMonth.to}`)}>This month</Button>
+            <Button
+              size="md"
+              variant="tonal"
+              onClick={() => navigate(`?from=${today}&to=${today}`)}
+            >
+              Today
+            </Button>
+            <Button
+              size="md"
+              variant="tonal"
+              onClick={() => navigate(`?from=${calendarMonth.from}&to=${calendarMonth.to}`)}
+            >
+              This month
+            </Button>
           </div>
           <label className="flex flex-col gap-1 text-label font-bold tracking-label">
             From
-            <input aria-label="Reports start date" type="date" value={start} onChange={(e) => setDateDraft({ rangeKey: activeRangeKey, from: e.target.value, to: end })} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
+            <input
+              aria-label="Reports start date"
+              type="date"
+              value={start}
+              onChange={(e) =>
+                setDateDraft({ rangeKey: activeRangeKey, from: e.target.value, to: end })
+              }
+              className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]"
+            />
           </label>
           <label className="flex flex-col gap-1 text-label font-bold tracking-label">
             To
-            <input aria-label="Reports end date" type="date" value={end} onChange={(e) => setDateDraft({ rangeKey: activeRangeKey, from: start, to: e.target.value })} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
+            <input
+              aria-label="Reports end date"
+              type="date"
+              value={end}
+              onChange={(e) =>
+                setDateDraft({ rangeKey: activeRangeKey, from: start, to: e.target.value })
+              }
+              className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]"
+            />
           </label>
-          <Button size="md" variant="tonal" onClick={() => navigate(`?from=${start}&to=${end}`)}>Apply dates</Button>
+          <Button size="md" variant="tonal" onClick={() => navigate(`?from=${start}&to=${end}`)}>
+            Apply dates
+          </Button>
         </div>
       </PageHeader>
 
@@ -142,7 +174,11 @@ export default function Reports() {
           <PaidOrderHistory
             id="history"
             page={history}
-            onPage={(offset) => navigate(`?${custom ? `from=${bundle.range.from}&to=${bundle.range.to}` : `range=${range}`}&offset=${offset}`)}
+            onPage={(offset) =>
+              navigate(
+                `?${custom ? `from=${bundle.range.from}&to=${bundle.range.to}` : `range=${range}`}&offset=${offset}`,
+              )
+            }
           />
 
           <div className="flex flex-wrap items-start gap-6">
