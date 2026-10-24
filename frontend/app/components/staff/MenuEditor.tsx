@@ -5,6 +5,7 @@ import { Field, FieldError, Input, Select } from "~/components/ui/Field";
 import { Panel } from "~/components/ui/Panel";
 import { MENU_CATEGORIES, type MenuCategory } from "~/lib/api/types";
 import { NAME_ERROR, PRICE_ERROR } from "~/lib/validation";
+import { placeholderImage } from "~/lib/domain/station";
 
 /** Shown instead of the form while nothing is being edited. */
 export function MenuEditorPlaceholder() {
@@ -28,6 +29,9 @@ interface MenuEditorProps {
   onPrice: (value: string) => void;
   available: boolean;
   onAvailable: (value: boolean) => void;
+  imageUrl: string;
+  onImageUrl: (value: string) => void;
+  imageUrlError: string | null;
 
   nameInvalid: boolean;
   priceInvalid: boolean;
@@ -53,6 +57,9 @@ export function MenuEditor({
   onPrice,
   available,
   onAvailable,
+  imageUrl,
+  onImageUrl,
+  imageUrlError,
   nameInvalid,
   priceInvalid,
   categoryNotSaved,
@@ -103,6 +110,42 @@ export function MenuEditor({
             onChange={(e) => onPrice(e.target.value)}
           />
         </Field>
+
+        <Field
+          label="Item image URL"
+          error={imageUrlError}
+          hint="Paste an HTTPS image URL from the configured Cloudinary account. Leave blank for the placeholder."
+        >
+          <Input
+            type="url"
+            placeholder="https://res.cloudinary.com/…"
+            value={imageUrl}
+            onChange={(e) => onImageUrl(e.target.value)}
+          />
+        </Field>
+        <div className="flex items-center gap-3">
+          <img
+            src={imageUrl.trim() || placeholderImage(name || "Menu item")}
+            onError={(event) => {
+              const image = event.currentTarget;
+              const fallback = placeholderImage(name || "Menu item");
+              if (image.src !== fallback) image.src = fallback;
+            }}
+            alt={imageUrl.trim() ? `${name || "Menu item"} preview` : "Menu image placeholder"}
+            width={120}
+            height={72}
+            className="h-[72px] w-[120px] rounded-md bg-field object-cover"
+          />
+          {imageUrl.trim() ? (
+            <Button variant="tonal" onClick={() => onImageUrl("")}>
+              Remove image
+            </Button>
+          ) : (
+            <span className="text-label tracking-caption text-moss">
+              Placeholder shown on the station
+            </span>
+          )}
+        </div>
 
         <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body font-bold tracking-bold">
           <input

@@ -33,6 +33,44 @@ export interface ReportBundle {
   turnover: TableTurnoverRow[];
 }
 
+export interface PaymentHistoryRow {
+  payment_id: number;
+  order_id: number;
+  sale_date: string;
+  transaction_time: string;
+  table_id: number;
+  amount: number;
+  payment_method: string;
+  cashier: string;
+  waiter: string;
+}
+
+export interface PaymentHistoryPage {
+  rows: PaymentHistoryRow[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export async function loadPaymentHistory(
+  range: Range,
+  offset: number,
+  limit = 50,
+): Promise<PaymentHistoryPage> {
+  const data = await request<{
+    rows: (Omit<PaymentHistoryRow, "amount"> & { amount: Money })[];
+    total: number;
+    limit: number;
+    offset: number;
+  }>(`${BASE}/payment-history/`, {
+    query: { from: range.from, to: range.to, offset, limit },
+  });
+  return {
+    ...data,
+    rows: data.rows.map((row) => ({ ...row, amount: parseUgx(row.amount) })),
+  };
+}
+
 /** The five manager reports for one date range, fetched together. */
 export async function loadReports(range: Range, topLimit = 6): Promise<ReportBundle> {
   const [daily, topItems, waiters, methods, turnover] = await Promise.all([

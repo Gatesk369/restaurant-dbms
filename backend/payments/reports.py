@@ -126,3 +126,29 @@ def payment_methods(start, end):
             ORDER BY revenue DESC, m.method""",
         (start, end),
     )
+
+
+def payment_history(start, end, limit=50, offset=0):
+    """Paid order ledger, newest payments first, with a bounded page size."""
+    total = fetch_one(
+        """SELECT COUNT(*) AS total
+             FROM payments p JOIN sales_record sr ON sr.payment_id = p.payment_id
+            WHERE sr.sale_date BETWEEN %s AND %s""",
+        (start, end),
+    )["total"]
+    rows = fetch_all(
+        """SELECT p.payment_id, p.order_id, sr.sale_date, p.transaction_time,
+                  o.table_id, p.amount, p.payment_method,
+                  COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.username) AS cashier,
+                  COALESCE(NULLIF(TRIM(CONCAT(w.first_name, ' ', w.last_name)), ''), w.username, '—') AS waiter
+             FROM payments p
+             JOIN sales_record sr ON sr.payment_id = p.payment_id
+             JOIN orders o ON o.order_id = p.order_id
+             JOIN staff c ON c.staff_id = p.cashier_id
+             LEFT JOIN staff w ON w.staff_id = o.staff_id
+            WHERE sr.sale_date BETWEEN %s AND %s
+            ORDER BY p.transaction_time DESC, p.payment_id DESC
+            LIMIT %s OFFSET %s""",
+        (start, end, limit, offset),
+    )
+    return rows, total

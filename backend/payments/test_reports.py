@@ -66,6 +66,9 @@ class ReportTests(TestCase):
         self.assertEqual(
             self.client.get("/api/staff/reports/daily-sales/").status_code, 403
         )
+        self.assertEqual(
+            self.client.get("/api/staff/reports/payment-history/").status_code, 403
+        )
 
     # --- daily sales ---
 
@@ -139,6 +142,37 @@ class ReportTests(TestCase):
         self.assertEqual([r["payment_method"] for r in rows], ["Cash", "Mobile Money"])
         self.assertEqual(rows[0]["revenue"], 31000)
         self.assertEqual(rows[1]["payments"], 1)
+
+    def test_payment_history_lists_order_records_and_paginates(self):
+        first = self.get("payment-history", limit=1)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.data["total"], 2)
+        self.assertEqual(len(first.data["rows"]), 1)
+        row = first.data["rows"][0]
+        self.assertGreater(row["order_id"], 0)
+        self.assertIn(row["payment_method"], {"Cash", "Mobile Money"})
+        self.assertIn(row["amount"], {25000, 31000})
+        self.assertTrue(row["cashier"])
+        self.assertTrue(row["waiter"])
+
+        second = self.get("payment-history", limit=1, offset=1)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.data["total"], 2)
+        self.assertEqual(len(second.data["rows"]), 1)
+        self.assertNotEqual(
+            first.data["rows"][0]["payment_id"], second.data["rows"][0]["payment_id"]
+        )
+
+    def test_payment_history_filters_by_sale_date_and_validates_pagination(self):
+        empty = self.get(
+            "payment-history", **{"from": "2020-01-01", "to": "2020-01-03"}
+        )
+        self.assertEqual(empty.status_code, 200)
+        self.assertEqual(empty.data["total"], 0)
+        self.assertEqual(empty.data["rows"], [])
+        self.assertEqual(self.get("payment-history", limit=0).status_code, 400)
+        self.assertEqual(self.get("payment-history", offset=-1).status_code, 400)
+        self.assertEqual(self.get("payment-history", limit="x").status_code, 400)
 
     def test_both_methods_show_even_with_no_payments(self):
         rows = self.get(

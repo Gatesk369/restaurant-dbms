@@ -83,6 +83,15 @@ export function rangeFor(key: RangeKey, today: string): { from: string; to: stri
     : { from: format(parse(monday) - 21 * DAY), to: sunday };
 }
 
+/** Calendar month containing `date`, using plain date strings in UTC. */
+export function calendarMonthFor(date: string): { from: string; to: string } {
+  const { year, month } = parts(date);
+  return {
+    from: format(Date.UTC(year, month, 1)),
+    to: format(Date.UTC(year, month + 1, 0)),
+  };
+}
+
 /** "5 to 11 October 2026" or "14 September to 11 October 2026". */
 export function rangeLabel(from: string, to: string): string {
   const a = parts(from);

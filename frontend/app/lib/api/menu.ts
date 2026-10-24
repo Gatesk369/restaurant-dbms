@@ -74,6 +74,7 @@ export interface MenuItemInput {
   item_name: string;
   price: number;
   availability_status: boolean;
+  image_url?: string | null;
   /** Ignored by the API until it stores categories (gap G5). */
   category?: MenuCategory;
 }

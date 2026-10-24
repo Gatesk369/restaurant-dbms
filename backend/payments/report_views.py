@@ -47,3 +47,18 @@ class TableTurnoverView(ReportView):
 class PaymentMethodsView(ReportView):
     def build(self, request, start, end):
         return {"rows": reports.payment_methods(start, end)}
+
+
+class PaymentHistoryView(ReportView):
+    def build(self, request, start, end):
+        try:
+            limit = int(request.query_params.get("limit", 50))
+            offset = int(request.query_params.get("offset", 0))
+        except ValueError:
+            raise ValidationError({"page": "Enter whole numbers for limit and offset."})
+        if not 1 <= limit <= 100 or offset < 0:
+            raise ValidationError(
+                {"page": "Use a limit from 1 to 100 and a nonnegative offset."}
+            )
+        rows, total = reports.payment_history(start, end, limit, offset)
+        return {"rows": rows, "total": total, "limit": limit, "offset": offset}
