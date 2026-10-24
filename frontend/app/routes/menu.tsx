@@ -263,9 +263,6 @@ function MenuEditorDialog({ children, onClose }: { children: ReactNode; onClose:
         event.preventDefault();
         onClose();
       }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
       className="m-auto max-h-[90dvh] w-[min(94vw,440px)] overflow-y-auto rounded-md border-0 bg-page p-0 shadow-xl backdrop:bg-forest/60"
     >
       {children}

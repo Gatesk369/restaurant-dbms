@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 
 import type { Route } from "./+types/reports";
@@ -71,12 +71,14 @@ const COPY: Record<RangeKey, { trend: string; sales: string; head: string; best:
 export default function Reports() {
   const { range, periodMode, custom, bundle, history } = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
-  const [start, setStart] = useState(bundle.range.from);
-  const [end, setEnd] = useState(bundle.range.to);
-  useEffect(() => {
-    setStart(bundle.range.from);
-    setEnd(bundle.range.to);
-  }, [bundle.range.from, bundle.range.to]);
+  const activeRangeKey = `${bundle.range.from}:${bundle.range.to}`;
+  const [dateDraft, setDateDraft] = useState(() => ({
+    rangeKey: activeRangeKey,
+    from: bundle.range.from,
+    to: bundle.range.to,
+  }));
+  const start = dateDraft.rangeKey === activeRangeKey ? dateDraft.from : bundle.range.from;
+  const end = dateDraft.rangeKey === activeRangeKey ? dateDraft.to : bundle.range.to;
 
   const view = useMemo(() => {
     if (!bundle) return null;
@@ -107,11 +109,11 @@ export default function Reports() {
           </div>
           <label className="flex flex-col gap-1 text-label font-bold tracking-label">
             From
-            <input aria-label="Reports start date" type="date" value={start} onChange={(e) => setStart(e.target.value)} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
+            <input aria-label="Reports start date" type="date" value={start} onChange={(e) => setDateDraft({ rangeKey: activeRangeKey, from: e.target.value, to: end })} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
           </label>
           <label className="flex flex-col gap-1 text-label font-bold tracking-label">
             To
-            <input aria-label="Reports end date" type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
+            <input aria-label="Reports end date" type="date" value={end} onChange={(e) => setDateDraft({ rangeKey: activeRangeKey, from: start, to: e.target.value })} className="min-h-12 rounded-md bg-field px-3 text-body font-normal shadow-[inset_0_-1px_0_var(--color-moss)]" />
           </label>
           <Button size="md" variant="tonal" onClick={() => navigate(`?from=${start}&to=${end}`)}>Apply dates</Button>
         </div>
