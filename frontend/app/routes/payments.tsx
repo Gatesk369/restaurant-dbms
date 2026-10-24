@@ -9,13 +9,13 @@ import { ReceiptPanel, type Receipt } from "~/components/staff/ReceiptPanel";
 import { ButtonLink } from "~/components/ui/Button";
 import { Chip } from "~/components/ui/Chip";
 import { Panel } from "~/components/ui/Panel";
-import { SCREENS, canAccess, getScreen } from "~/lib/access";
+import { SCREENS, getScreen } from "~/lib/access";
 import { staffName } from "~/lib/api/auth";
 import { ApiError } from "~/lib/api/client";
 import { listStaffOrders } from "~/lib/api/orders";
 import { payOrder } from "~/lib/api/payments";
 import { ROLE_LABELS } from "~/lib/api/types";
-import { requireStaffSession, rethrowApiError } from "~/lib/auth-guard";
+import { requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
 import {
   MOBILE_NETWORKS,
   apiMethod,
@@ -48,9 +48,7 @@ export function meta({}: Route.MetaArgs) {
 const POLL_MS = 10_000;
 
 export async function clientLoader() {
-  const { staff } = requireStaffSession();
-  // The shell shows a locked panel to roles without access; skip the fetch.
-  if (!canAccess(staff.role, "payments")) return { staff, orders: [] };
+  const { staff } = requireStaffScreen("payments");
   try {
     // A cashier's queue is served-and-unpaid on the server; a manager's is not.
     const orders = await listStaffOrders(staff.role === "cashier" ? undefined : ["served"]);
@@ -219,6 +217,7 @@ export default function Payments() {
             <ReceiptPanel
               receipt={receipt}
               cashier={staffName(staff)}
+              role={staff.role}
               roleLabel={ROLE_LABELS[staff.role]}
               moreWaiting={queue.length > 0}
               onNext={nextOrder}

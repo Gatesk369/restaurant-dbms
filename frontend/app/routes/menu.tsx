@@ -9,7 +9,7 @@ import { Button } from "~/components/ui/Button";
 import { FieldError } from "~/components/ui/Field";
 import { Icon } from "~/components/ui/Icon";
 import { StatusMessage } from "~/components/ui/Toast";
-import { canAccess, getScreen } from "~/lib/access";
+import { getScreen } from "~/lib/access";
 import { ApiError } from "~/lib/api/client";
 import {
   archiveMenuItem,
@@ -17,10 +17,9 @@ import {
   loadStaffMenu,
   restoreMenuItem,
   updateMenuItem,
-  type MenuFeatures,
 } from "~/lib/api/menu";
 import type { MenuCategory, MenuItem } from "~/lib/api/types";
-import { requireStaffSession, rethrowApiError } from "~/lib/auth-guard";
+import { requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
 import { archivedCount, filterMenu, itemStatus, menuItemNumber } from "~/lib/domain/menu";
 import { categoryOf } from "~/lib/domain/menu-categories";
 import { isValidItemName, isValidPrice } from "~/lib/validation";
@@ -33,12 +32,8 @@ export function meta({}: Route.MetaArgs) {
   return [{ title: `${screen.title} · Restaurant DBMS` }];
 }
 
-const NO_FEATURES: MenuFeatures = { category: false, archived: false };
-
 export async function clientLoader() {
-  const { staff } = requireStaffSession();
-  // The shell shows a locked panel to roles without access; skip the fetch.
-  if (!canAccess(staff.role, "menu")) return { items: [] as MenuItem[], features: NO_FEATURES };
+  requireStaffScreen("menu");
   try {
     return await loadStaffMenu();
   } catch (error) {

@@ -14,9 +14,9 @@ import {
 } from "~/components/staff/ReportPanels";
 import { ToggleChip, ToggleGroup } from "~/components/ui/Chip";
 import { Panel, PanelHeading } from "~/components/ui/Panel";
-import { canAccess, getScreen } from "~/lib/access";
-import { loadReports, type ReportBundle } from "~/lib/api/reports";
-import { requireStaffSession, rethrowApiError } from "~/lib/auth-guard";
+import { getScreen } from "~/lib/access";
+import { loadReports } from "~/lib/api/reports";
+import { requireStaffScreen, rethrowApiError } from "~/lib/auth-guard";
 import {
   RANGES,
   dailyPeriods,
@@ -39,10 +39,8 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  const { staff } = requireStaffSession();
+  requireStaffScreen("reports");
   const range: RangeKey = parseRange(new URL(request.url).searchParams.get("range"));
-  // The shell shows a locked panel to roles without access; skip the fetch.
-  if (!canAccess(staff.role, "reports")) return { range, bundle: null as ReportBundle | null };
   try {
     return { range, bundle: await loadReports(rangeFor(range, kampalaDate())) };
   } catch (error) {

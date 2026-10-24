@@ -8,11 +8,9 @@ export interface Screen {
   path: string;
   /** Sidebar tab label. */
   nav: string;
-  /** Startup tile and page title. */
+  /** Page title. */
   title: string;
   icon: IconName;
-  /** Startup tile description, verbatim from the mock-up. */
-  description: string;
   /** Page subtitle, verbatim from the mock-up. */
   subtitle: string;
   roles: readonly Role[];
@@ -21,7 +19,7 @@ export interface Screen {
 /**
  * Screens in sidebar order, and who may use them (design document, "Users and
  * roles"). The API enforces the same rules; this only decides what the UI
- * offers and what a locked screen says.
+ * offers; hidden navigation never replaces API authorization.
  */
 export const SCREENS: readonly Screen[] = [
   {
@@ -30,7 +28,6 @@ export const SCREENS: readonly Screen[] = [
     nav: "Orders",
     title: "Orders",
     icon: "orders",
-    description: "Follow customer orders from assignment through preparation and service.",
     subtitle:
       "Kitchen staff prepare orders and mark them ready; assigned wait staff deliver and mark them served.",
     roles: ["cashier", "wait_staff", "kitchen", "manager"],
@@ -41,7 +38,6 @@ export const SCREENS: readonly Screen[] = [
     nav: "Payments",
     title: "Payments",
     icon: "payments",
-    description: "Check out served orders with cash or mobile money.",
     subtitle: "Check out served orders with cash or mobile money.",
     roles: ["cashier", "manager"],
   },
@@ -51,7 +47,6 @@ export const SCREENS: readonly Screen[] = [
     nav: "Menu",
     title: "Menu management",
     icon: "menu",
-    description: "Add, update, archive and search food and drink items.",
     subtitle: "Add, update, archive and search the food and drink items staff can order.",
     roles: ["manager"],
   },
@@ -61,7 +56,6 @@ export const SCREENS: readonly Screen[] = [
     nav: "Reports",
     title: "Reports",
     icon: "reports",
-    description: "Daily sales, top items, waiter performance and table turnover.",
     // The mock-up prints the selected date range here; Phase 5 supplies it.
     subtitle: "",
     roles: ["manager"],
@@ -76,4 +70,16 @@ export function getScreen(key: ScreenKey): Screen {
 
 export function canAccess(role: Role, key: ScreenKey): boolean {
   return getScreen(key).roles.includes(role);
+}
+
+/** Destinations available to the authenticated role, in navigation order. */
+export function screensForRole(role: Role): readonly Screen[] {
+  return SCREENS.filter((screen) => canAccess(role, screen.key));
+}
+
+/** Shared landing screen after sign-in, a root visit, or a forbidden URL. */
+export function defaultScreenForRole(role: Role): Screen {
+  const key = role === "cashier" ? "payments" : "orders";
+  if (!canAccess(role, key)) throw new Error(`No permitted default screen for ${role}`);
+  return getScreen(key);
 }

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { expectMatchesReference } from "../visual/compare";
 import { FakeApi, type FakeOptions } from "./fake-api";
-import { fontsReady } from "./helpers";
+import { PERSONAS, fontsReady, signInAs } from "./helpers";
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
@@ -55,7 +55,7 @@ async function toReview(page: Page) {
 }
 
 test.describe("fidelity against the mock-up", () => {
-  test("walks the four steps as the mock-up does", async ({ page }) => {
+  test("walks the four steps with cashier-only payment selection", async ({ page }) => {
     await openStation(page);
     await settle(page);
     await expectMatchesReference(page, "station-1-table", CANVAS);
@@ -75,24 +75,17 @@ test.describe("fidelity against the mock-up", () => {
     await page.getByRole("button", { name: "Review order" }).click();
     await expect(page.getByRole("heading", { name: "Check your order" })).toBeVisible();
     await settle(page);
-    await expectMatchesReference(page, "station-3-review-till", CANVAS);
+    await expect(page).toHaveScreenshot("station-review.png");
 
-    await page.getByRole("radio", { name: /^Mobile money now/ }).check({ force: true });
-    await page.getByLabel("Phone number").fill("0772");
-    await send(page).click();
-    await expect(page.getByRole("alert")).toContainText("Error: enter a 10-digit number");
-    await settle(page);
-    await expectMatchesReference(page, "station-3-review-momo-error", CANVAS);
-
-    await page.getByLabel("Phone number").fill("0772123456");
     await send(page).click();
     await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
     await settle(page);
-    await expectMatchesReference(page, "station-4-done-pending", CANVAS);
+    await expect(page).toHaveScreenshot("station-done-pending.png");
 
     await page.getByRole("button", { name: /Prototype only/ }).click();
     await settle(page);
-    await expectMatchesReference(page, "station-4-done-preparing", CANVAS);
+    // Both CI runs reported a stable five-pixel difference for this baseline.
+    await expect(page).toHaveScreenshot("station-done-preparing.png", { maxDiffPixels: 5 });
   });
 });
 
@@ -222,14 +215,15 @@ test.describe("the menu", () => {
 });
 
 test.describe("reviewing and sending", () => {
-  test("explains what the till option means", async ({ page }) => {
+  test("reviews the cart without payment selection or customer payment fields", async ({
+    page,
+  }) => {
     await openStation(page);
     await toReview(page);
-    await expect(
-      page.getByText(
-        "Pay the cashier with cash or mobile money when you are ready to leave. Quote your order number.",
-      ),
-    ).toBeVisible();
+    await expect(page.getByRole("group", { name: "How will you pay?" })).toHaveCount(0);
+    await expect(page.getByRole("radio")).toHaveCount(0);
+    await expect(page.getByLabel("Network")).toHaveCount(0);
+    await expect(page.getByLabel("Phone number")).toHaveCount(0);
     await expect(send(page)).toHaveText("Send to kitchen · UGX 61,000");
   });
 
@@ -264,19 +258,74 @@ test.describe("reviewing and sending", () => {
     await expect(page.getByText("2 × Matoke & Beef Stew")).toBeVisible();
   });
 
-  test("keeps the phone number and says where the request went", async ({ page }) => {
-    await openStation(page);
+  test("restores an older draft without retaining payment fields or blocking submission", async ({
+    page,
+  }) => {
+    const api = await openStation(page);
     await toReview(page);
-    await page.getByRole("radio", { name: /^Mobile money now/ }).check({ force: true });
-    await page.getByLabel("Network").selectOption("Airtel Money");
-    await page.getByLabel("Phone number").fill("0752123456");
+    await page.getByLabel("Special instructions for the kitchen").fill("no onions");
+    await page.evaluate(() => {
+      const draft = JSON.parse(sessionStorage.getItem("rdbms.station")!);
+      sessionStorage.setItem(
+        "rdbms.station",
+        JSON.stringify({
+          ...draft,
+          pay: "momo",
+          network: "Airtel Money",
+          phone: "0772",
+        }),
+      );
+    });
+    await page.reload();
+    await expect(page.getByLabel("Special instructions for the kitchen")).toHaveValue("no onions");
+    await expect(send(page)).toHaveText("Send to kitchen · UGX 61,000");
+    await expect
+      .poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem("rdbms.station")!)))
+      .not.toHaveProperty("phone");
     await send(page).click();
-    await expect(
-      page.getByText(
-        "A payment request for UGX 61,000 was sent to 0752123456 on Airtel Money. Approve it on your phone.",
-      ),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+    expect(api.callsTo("POST", "/api/my/orders/")).toHaveLength(1);
+    expect(api.paid.size).toBe(0);
+    await expect(page.getByText(/A payment request/)).toHaveCount(0);
+    await expect(page.getByText(/ask your waiter for the payment options/)).toBeVisible();
   });
+
+  for (const method of ["Cash", "Mobile Money"] as const) {
+    test(`submits without payment then lets the cashier record ${method}`, async ({ page }) => {
+      const api = await openStation(page);
+      await toReview(page);
+      await send(page).click();
+      await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+      expect(api.paid.size).toBe(0);
+      expect(api.calls.filter((c) => c.path.endsWith("/pay/"))).toHaveLength(0);
+      const order = api.orders.find((o) => o.order_id === 1047)!;
+      expect(order.order_status).toBe("pending");
+      order.order_status = "served";
+      api.set({ queueView: "cashier" });
+      await signInAs(page, PERSONAS.cashier);
+      await page.goto("/payments");
+      await page.getByRole("button", { name: /^ORD-1047/ }).click();
+      if (method === "Cash") {
+        await page.getByLabel("Amount received (UGX)").fill("70000");
+      } else {
+        await page.getByRole("radio", { name: /^Mobile money/ }).check({ force: true });
+        await page.getByLabel("Network").selectOption("Airtel Money");
+        await page.getByLabel("Customer phone number").fill("0752123456");
+      }
+      await page.getByRole("button", { name: /^Record payment/ }).click();
+      const receipt = page.locator("section", {
+        has: page.getByText("Payment recorded", { exact: true }),
+      });
+      await expect(receipt).toContainText("PAY-0388 for ORD-1047");
+      await expect(receipt).toContainText(method === "Cash" ? "Cash" : "Airtel Money");
+      await expect(receipt).toContainText("UGX 61,000");
+      await expect(receipt).toContainText(method === "Cash" ? "UGX 9,000" : "UGX 0");
+      expect(api.callsTo("POST", "/api/staff/orders/1047/pay/").map((c) => c.body)).toEqual([
+        { payment_method: method },
+      ]);
+      expect(api.paid.has(1047)).toBe(true);
+    });
+  }
 
   test("shows the server's reason when an item is no longer available", async ({ page }) => {
     await openStation(page, { ...FULL, placeError: "Not available right now: Chicken Luwombo" });

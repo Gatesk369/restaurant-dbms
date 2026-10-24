@@ -14,7 +14,7 @@ interface CheckoutPanelProps {
   /** Signed-in cashier, for "Recorded by". */
   staffName: string;
   roleLabel: string;
-  /** Only cashiers can record payments; others see why the button is off. */
+  /** Only cashiers see payment-entry controls; managers get the order summary. */
   canRecord: boolean;
 
   method: Method;
@@ -110,111 +110,112 @@ export function CheckoutPanel({
         <span className="text-title font-bold tabular-nums">{formatUgx(order.total)}</span>
       </div>
 
-      <RadioCardGroup legend="Payment method">
-        <RadioCard
-          name="method"
-          value="cash"
-          checked={method === "cash"}
-          onChange={() => onMethod("cash")}
-          label="Cash"
-          hint="Count the notes and give change"
-          variant="method"
-        />
-        <RadioCard
-          name="method"
-          value="momo"
-          checked={method === "momo"}
-          onChange={() => onMethod("momo")}
-          label="Mobile money"
-          hint="MTN or Airtel"
-          variant="method"
-        />
-      </RadioCardGroup>
-
-      {method === "cash" ? (
-        <div className="flex flex-col gap-3">
-          <Field label="Amount received (UGX)">
-            <Input
-              inputMode="numeric"
-              placeholder="For example: 100000"
-              value={tendered}
-              aria-invalid={cashError ? true : undefined}
-              aria-describedby={cashError ? "cash-error" : undefined}
-              onChange={(e) => onTendered(e.target.value.replace(/[^0-9]/g, ""))}
+      {canRecord ? (
+        <>
+          <RadioCardGroup legend="Payment method">
+            <RadioCard
+              name="method"
+              value="cash"
+              checked={method === "cash"}
+              onChange={() => onMethod("cash")}
+              label="Cash"
+              hint="Count the notes and give change"
+              variant="method"
             />
-          </Field>
-          <div className="flex flex-wrap gap-2">
-            {quickAmounts(order.total).map((quick) => (
-              <Button
-                key={quick.label}
-                variant="tonal"
-                size="sm"
-                onClick={() => onTendered(String(quick.value))}
-              >
-                {quick.label}
-              </Button>
-            ))}
-          </div>
-          {cashError ? <FieldError id="cash-error">{cashError}</FieldError> : null}
-          <div className="flex items-baseline justify-between gap-3 rounded-md bg-tea px-4 py-3">
-            <span className="text-body font-bold">Change due</span>
-            <span className="text-figure font-bold tabular-nums">{formatUgx(changeDue)}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-4">
-            <Field label="Network" className="flex-[1_1_220px]">
-              <Select value={network} onChange={(e) => onNetwork(e.target.value as MobileNetwork)}>
-                {MOBILE_NETWORKS.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
+            <RadioCard
+              name="method"
+              value="momo"
+              checked={method === "momo"}
+              onChange={() => onMethod("momo")}
+              label="Mobile money"
+              hint="MTN or Airtel"
+              variant="method"
+            />
+          </RadioCardGroup>
+
+          {method === "cash" ? (
+            <div className="flex flex-col gap-3">
+              <Field label="Amount received (UGX)">
+                <Input
+                  inputMode="numeric"
+                  placeholder="For example: 100000"
+                  value={tendered}
+                  aria-invalid={cashError ? true : undefined}
+                  aria-describedby={cashError ? "cash-error" : undefined}
+                  onChange={(e) => onTendered(e.target.value.replace(/[^0-9]/g, ""))}
+                />
+              </Field>
+              <div className="flex flex-wrap gap-2">
+                {quickAmounts(order.total).map((quick) => (
+                  <Button
+                    key={quick.label}
+                    variant="tonal"
+                    size="sm"
+                    onClick={() => onTendered(String(quick.value))}
+                  >
+                    {quick.label}
+                  </Button>
                 ))}
-              </Select>
-            </Field>
-            <Field label="Customer phone number" className="flex-[1_1_220px]">
-              <Input
-                inputMode="tel"
-                placeholder="07XX XXX XXX"
-                value={phone}
-                aria-invalid={phoneInvalid ? true : undefined}
-                aria-describedby={phoneInvalid ? "phone-error" : undefined}
-                onChange={(e) => onPhone(e.target.value)}
-              />
-            </Field>
+              </div>
+              {cashError ? <FieldError id="cash-error">{cashError}</FieldError> : null}
+              <div className="flex items-baseline justify-between gap-3 rounded-md bg-tea px-4 py-3">
+                <span className="text-body font-bold">Change due</span>
+                <span className="text-figure font-bold tabular-nums">{formatUgx(changeDue)}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-4">
+                <Field label="Network" className="flex-[1_1_220px]">
+                  <Select
+                    value={network}
+                    onChange={(e) => onNetwork(e.target.value as MobileNetwork)}
+                  >
+                    {MOBILE_NETWORKS.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Customer phone number" className="flex-[1_1_220px]">
+                  <Input
+                    inputMode="tel"
+                    placeholder="07XX XXX XXX"
+                    value={phone}
+                    aria-invalid={phoneInvalid ? true : undefined}
+                    aria-describedby={phoneInvalid ? "phone-error" : undefined}
+                    onChange={(e) => onPhone(e.target.value)}
+                  />
+                </Field>
+              </div>
+              {phoneInvalid ? <FieldError id="phone-error">{PHONE_ERROR}</FieldError> : null}
+              <p className="m-0 rounded-md bg-tea px-4 py-3 text-body tracking-body">
+                The customer approves the request on their phone. Record the payment once the
+                confirmation message arrives.
+              </p>
+            </div>
+          )}
+
+          {error ? <FieldError>{error}</FieldError> : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-tea pt-4">
+            <p className="m-0 text-body tracking-body text-moss">
+              Recorded by <strong className="text-forest">{staffName}</strong>, {roleLabel}
+            </p>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                variant="primary"
+                className="min-h-12 min-w-[220px]"
+                pending={paying}
+                onClick={onRecord}
+              >
+                Record payment · {formatUgx(order.total)}
+              </Button>
+            </div>
           </div>
-          {phoneInvalid ? <FieldError id="phone-error">{PHONE_ERROR}</FieldError> : null}
-          <p className="m-0 rounded-md bg-tea px-4 py-3 text-body tracking-body">
-            The customer approves the request on their phone. Record the payment once the
-            confirmation message arrives.
-          </p>
-        </div>
-      )}
-
-      {error ? <FieldError>{error}</FieldError> : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-tea pt-4">
-        <p className="m-0 text-body tracking-body text-moss">
-          Recorded by <strong className="text-forest">{staffName}</strong>, {roleLabel}
-        </p>
-        <div className="flex flex-col items-end gap-1">
-          <Button
-            variant="primary"
-            className="min-h-12 min-w-[220px]"
-            disabled={!canRecord}
-            pending={paying}
-            onClick={onRecord}
-          >
-            Record payment · {formatUgx(order.total)}
-          </Button>
-          {!canRecord ? (
-            <span className="text-label tracking-caption text-moss">
-              Only cashiers can record payments.
-            </span>
-          ) : null}
-        </div>
-      </div>
+        </>
+      ) : null}
     </Panel>
   );
 }

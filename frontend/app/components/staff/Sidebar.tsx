@@ -1,15 +1,15 @@
 import { NavLink } from "react-router";
 
 import { Icon, type IconName } from "~/components/ui/Icon";
-import { SCREENS } from "~/lib/access";
+import { screensForRole } from "~/lib/access";
 import { staffName } from "~/lib/api/auth";
 import { ROLE_LABELS, type Staff } from "~/lib/api/types";
 import { cx } from "~/lib/cx";
 
 /**
  * 240px forest sidebar. Sticky on wide screens; under 880px it becomes a row
- * above the content. Navigation stays open for every role (the API and the
- * Locked panel enforce access, not the menu).
+ * above the content. Only destinations permitted for the staff role are shown;
+ * route loaders and the API enforce access independently.
  */
 const TAB =
   "box-border flex min-h-12 w-full items-center gap-3 rounded-md border-0 bg-transparent px-3 " +
@@ -41,7 +41,7 @@ export function Sidebar({ staff, onSignOut }: SidebarProps) {
           aria-label="Main"
           className="flex flex-col gap-1 max-[880px]:flex-row max-[880px]:flex-wrap"
         >
-          {SCREENS.map((screen) => (
+          {screensForRole(staff.role).map((screen) => (
             <NavLink key={screen.key} to={screen.path} className={cx(TAB, "max-[880px]:w-auto")}>
               <TabIcon name={screen.icon} />
               {screen.nav}

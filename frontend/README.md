@@ -6,6 +6,31 @@ It talks to the Django API in `../backend` and is built to match the mock-ups in
 [`../docs/frontend-implementation-plan.md`](../docs/frontend-implementation-plan.md)
 and [`../docs/design-system.md`](../docs/design-system.md).
 
+## Role-based navigation
+
+Navigation and report links use the authenticated staff role.
+Cashiers see Orders and Payments; wait staff and kitchen staff see Orders;
+managers see Orders, Payments, Menu management, and Reports. Unavailable
+screens are omitted rather than shown as locked cards. Direct visits to a
+forbidden screen redirect to the role's default workspace before its loader
+requests protected data. API authorization remains independent.
+
+Managers can review served orders in Payments, while payment-entry controls
+remain exclusive to cashiers. Cashier receipts offer the next order or a return
+to Orders, without a link to manager-only reports.
+
+## Direct workspace entry
+
+After sign-in, cashiers enter Payments; wait staff and kitchen staff enter
+Orders; managers enter Orders and can use the sidebar for other permitted
+screens. Visiting `/` with a stored session uses the same default. The startup
+menu and its tiles have been removed (#37).
+
+The authenticated API role determines the destination, regardless of the role
+card selected or URL query parameters. A rejected staff session is cleared before
+returning to sign-in with an expiry message, preventing redirect loops. Sign-out
+remains in the staff sidebar and clears the session and payment tally.
+
 ## Ordering and staff responsibilities
 
 Customers submit orders through `/station`. The database assigns an available
@@ -101,7 +126,7 @@ tests/
 
 ## Staff task feedback
 
-Orders show submission confirmations and status-change messages. Payments show
+Orders show status-change confirmations. Payments show
 receipts, queue updates, and the session total. Both keep actionable errors.
 Database activity panels and their frontend-generated SQL descriptions were
 removed in #39; no operational screen queries or synthesizes an audit stream.
@@ -109,3 +134,15 @@ removed in #39; no operational screen queries or synthesizes an audit stream.
 Educational trigger explanations remain in the [data dictionary](../docs/data-dictionary.md)
 and [historical design notes](../docs/design/ui-ux-design-document.md#database-activity-historical-mock-up).
 Backend triggers, payment transactions, and actual audit logging are unaffected.
+
+## Customer ordering and payment
+
+Customers submit their cart and kitchen instructions at `/station` without
+choosing a payment method. Review and tracking never initiate a payment request
+or claim payment was collected. Older saved drafts retain the cart and notes
+while discarding payment-choice, network, and phone fields.
+
+The cashier chooses the actual cash or mobile-money method at checkout. Cash
+amount/change and mobile network/phone validation remain in the cashier flow.
+The API stores Cash or Mobile Money for receipts and reports; network and phone
+remain local cashier details until backend issue #16 is implemented.

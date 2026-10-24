@@ -30,7 +30,7 @@ test.describe("staff shell", () => {
     expect((await sidebar.boundingBox())?.width).toBe(240);
 
     const nav = page.getByRole("navigation", { name: "Main" });
-    await expect(nav.getByRole("link")).toHaveText(["Orders", "Payments", "Menu", "Reports"]);
+    await expect(nav.getByRole("link")).toHaveText(["Orders"]);
     await expect(sidebar.getByText("Okello Peter")).toBeVisible();
     await expect(sidebar.getByText("Wait Staff")).toBeVisible();
   });
@@ -69,25 +69,37 @@ test.describe("staff shell", () => {
     await expect(page).toHaveTitle("Reports · Restaurant DBMS");
   });
 
-  test("shows a locked panel for screens the role cannot use", async ({ page }) => {
-    await signInAs(page, PERSONAS.waiter);
-    await page.goto("/payments");
-    await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
-    await expect(page.getByText("Locked for Wait Staff")).toBeVisible();
-    // Navigation stays open so reviewers can move through every screen.
-    await expect(page.getByRole("link", { name: "Reports", exact: true })).toBeVisible();
+  for (const [persona, labels, forbidden] of [
+    [PERSONAS.waiter, ["Orders"], ["/payments", "/menu", "/reports"]],
+    [PERSONAS.kitchen, ["Orders"], ["/payments", "/menu", "/reports"]],
+    [PERSONAS.cashier, ["Orders", "Payments"], ["/menu", "/reports"]],
+    [PERSONAS.manager, ["Orders", "Payments", "Menu", "Reports"], []],
+  ] as const) {
+    test(`${persona.role} sees only permitted navigation`, async ({ page }) => {
+      await signInAs(page, persona);
+      await page.goto("/orders");
+      await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link")).toHaveText([
+        ...labels,
+      ]);
+    });
 
-    await page.goto("/menu");
-    await expect(page.getByText("Locked for Wait Staff")).toBeVisible();
-  });
-
-  test("lets a cashier into Payments and locks Reports", async ({ page }) => {
-    await signInAs(page, PERSONAS.cashier);
-    await page.goto("/payments");
-    await expect(page.getByText(/^Locked for/)).toHaveCount(0);
-    await page.goto("/reports");
-    await expect(page.getByText("Locked for Cashier")).toBeVisible();
-  });
+    for (const path of forbidden) {
+      test(`${persona.role} redirects forbidden ${path} to its default workspace`, async ({
+        page,
+      }) => {
+        await signInAs(page, persona);
+        await page.goto(path);
+        await expect(page).toHaveURL(persona.role === "cashier" ? "/payments" : "/orders");
+        await expect(
+          page.getByRole("heading", {
+            level: 1,
+            name: persona.role === "cashier" ? "Payments" : "Orders",
+          }),
+        ).toBeVisible();
+        await expect(page.getByText(/Locked for/)).toHaveCount(0);
+      });
+    }
+  }
 
   test("signs out and clears the stored session", async ({ page }) => {
     await signInAs(page, PERSONAS.cashier);
@@ -136,7 +148,15 @@ test.describe("fidelity against the mock-up", () => {
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await fontsReady(page);
 
-      await expectMatchesReference(page, reference, { x: 0, y: 0, width: 240, height: 420 });
+      if (persona.role === "manager") {
+        await expectMatchesReference(page, reference, { x: 0, y: 0, width: 240, height: 420 });
+      } else {
+        // #36 intentionally removes destinations the role cannot use.
+        await expect(page.locator("aside").first().locator("> div")).toHaveScreenshot(
+          `${persona.role}-sidebar.png`,
+          { animations: "disabled" },
+        );
+      }
       if (path === "/orders") {
         const header = page.getByRole("heading", { level: 1, name: "Orders" }).locator("..");
         await expect(header).toContainText(

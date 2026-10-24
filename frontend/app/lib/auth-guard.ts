@@ -1,9 +1,10 @@
 import { redirect } from "react-router";
 
+import { canAccess, defaultScreenForRole, type ScreenKey } from "./access";
 import { ApiError } from "./api/client";
 
 import type { StaffSession } from "./api/types";
-import { getStaffSession } from "./session";
+import { clearStaffSession, getStaffSession } from "./session";
 
 /** Why the visitor was sent back to sign-in; the page words it. */
 export type SignInReason = "expired";
@@ -23,11 +24,24 @@ export function requireStaffSession(): StaffSession {
   return session;
 }
 
+/** Check before loading protected screen data, including direct URL visits. */
+export function requireStaffScreen(screen: ScreenKey): StaffSession {
+  const session = requireStaffSession();
+  if (!canAccess(session.staff.role, screen)) {
+    const destination = defaultScreenForRole(session.staff.role);
+    throw redirect(destination.path);
+  }
+  return session;
+}
+
 /**
  * For clientLoader catch blocks: an ended session goes back to sign-in with a
  * reason; every other error is rethrown for the route's error boundary.
  */
 export function rethrowApiError(error: unknown): never {
-  if (error instanceof ApiError && error.isUnauthorized) throw signInRedirect("expired");
+  if (error instanceof ApiError && error.isUnauthorized) {
+    clearStaffSession();
+    throw signInRedirect("expired");
+  }
   throw error;
 }

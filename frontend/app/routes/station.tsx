@@ -16,19 +16,16 @@ import { fetchTables } from "~/lib/api/tables";
 import type { Order, Table } from "~/lib/api/types";
 import { addToCart, cartTotal, changeQuantity, type CartLine } from "~/lib/domain/cart";
 import { categoryOf } from "~/lib/domain/menu-categories";
-import type { MobileNetwork } from "~/lib/domain/payments";
 import {
   SCREEN_INDEX,
   STATION_CATEGORIES,
   orderFor as orderForText,
-  payNote,
   trackerStep,
 } from "~/lib/domain/station";
 import { deriveTables, parseTableIds } from "~/lib/domain/tables";
 import { prototypeControls, tableIdsSpec } from "~/lib/env";
 import { useIdle } from "~/lib/hooks/use-idle";
 import { usePoll } from "~/lib/hooks/use-poll";
-import { formatUgx } from "~/lib/money";
 import { clearCustomerSession, getCustomerSession, setCustomerSession } from "~/lib/session";
 import {
   EMPTY_DRAFT,
@@ -37,7 +34,6 @@ import {
   saveDraft,
   type StationDraft,
 } from "~/lib/station-session";
-import { isValidPhone } from "~/lib/validation";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Order from your table · Restaurant DBMS" }];
@@ -70,7 +66,6 @@ export default function Station() {
 
   const [toast, setToast] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [tried, setTried] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -138,10 +133,6 @@ export default function Station() {
 
   async function send() {
     if (lines.length === 0 || sending) return;
-    if (draft.pay === "momo" && !isValidPhone(draft.phone)) {
-      setTried(true);
-      return;
-    }
     const session = getCustomerSession();
     if (!session) {
       setStartError("Error: Your session has ended. Choose your table again.");
@@ -152,8 +143,6 @@ export default function Station() {
     setSendError(null);
     try {
       const note = draft.notes.trim();
-      // The payment choice stays on this screen: the API has no customer
-      // payment flow yet (gap G15), so only the cart is sent.
       const order = await sendOrder(
         session,
         lines.map((l) => ({
@@ -164,7 +153,6 @@ export default function Station() {
       );
       setPlaced(order);
       setLocalStep(0);
-      setTried(false);
       patch({ screen: "done", orderId: order.order_id });
     } catch (error) {
       if (error instanceof ApiError && error.isUnauthorized) {
@@ -185,7 +173,6 @@ export default function Station() {
     setDraft(EMPTY_DRAFT);
     setPlaced(null);
     setLocalStep(0);
-    setTried(false);
     setStartError(null);
     setSendError(null);
     setToast("");
@@ -272,7 +259,6 @@ export default function Station() {
             onDecrement={(id) => setLines(changeQuantity(lines, id, -1))}
             onReview={() => {
               if (lines.length > 0) {
-                setTried(false);
                 setSendError(null);
                 patch({ screen: "review" });
               }
@@ -293,19 +279,6 @@ export default function Station() {
             }}
             notes={draft.notes}
             onNotes={(value) => patch({ notes: value })}
-            pay={draft.pay}
-            onPay={(choice) => {
-              setTried(false);
-              patch({ pay: choice });
-            }}
-            network={draft.network as MobileNetwork}
-            onNetwork={(network) => patch({ network })}
-            phone={draft.phone}
-            onPhone={(value) => {
-              setTried(false);
-              patch({ phone: value });
-            }}
-            phoneInvalid={tried && draft.pay === "momo" && !isValidPhone(draft.phone)}
             sending={sending}
             error={sendError}
             onBack={() => patch({ screen: "menu" })}
@@ -319,7 +292,6 @@ export default function Station() {
             tableLabel={`Table ${placed?.table_id ?? draft.table ?? ""}`}
             step={step}
             cancelled={cancelled}
-            payNote={payNote(draft.pay, orderNo, formatUgx(doneTotal), draft.phone, draft.network)}
             summary={summary}
             kitchenNote={kitchenNote}
             total={doneTotal}
