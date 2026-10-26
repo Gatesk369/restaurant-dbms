@@ -54,6 +54,8 @@ async function toReview(page: Page) {
 test.describe("responsive ordering appearance", () => {
   test("walks the four steps with cashier-only payment selection", async ({ page }) => {
     await openStation(page);
+    await expect(page.getByLabel("Your name (optional)")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Call a waiter" })).toHaveCount(0);
     await settle(page);
     await expect(page).toHaveScreenshot("responsive-station-1-table.png");
 
