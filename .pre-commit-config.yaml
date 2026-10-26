@@ -17,3 +17,25 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+
+  # Frontend quality checks run locally here and in the existing frontend CI job.
+  - repo: local
+    hooks:
+      - id: frontend-lint
+        name: Frontend lint
+        entry: bash frontend/scripts/pre-commit-check.sh lint
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: frontend-typecheck
+        name: Frontend typecheck
+        entry: bash frontend/scripts/pre-commit-check.sh typecheck
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: frontend-format-check
+        name: Frontend format check
+        entry: bash frontend/scripts/pre-commit-check.sh format:check
+        language: system
+        files: ^frontend/
+        pass_filenames: false

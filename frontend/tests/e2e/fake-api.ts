@@ -28,7 +28,7 @@ export interface Call {
 }
 
 export interface FakeOptions {
-  /** Serve GET /api/tables/ (gap G1 closed). Otherwise it is a 404. */
+  /** Serve GET /api/tables/. Otherwise it is a 404 for fallback coverage. */
   tablesEndpoint?: boolean;
   /** Replace the order list (wire shape). */
   orders?: WireOrder[];
@@ -373,6 +373,10 @@ export class FakeApi {
   }
 
   private create(route: Route, tableId: number, body: unknown) {
+    const table = this.tables.find((row) => row.table_id === tableId);
+    if (table && !table.free_status) {
+      return this.json(route, 409, { detail: "This table is occupied until its order is paid." });
+    }
     if (this.options.placeError) {
       const message = this.options.placeError;
       this.options.placeError = undefined;
@@ -405,6 +409,7 @@ export class FakeApi {
       items,
     } as unknown as WireOrder;
     this.orders.unshift(order);
+    if (table) table.free_status = false;
     return this.json(route, 201, order);
   }
 }

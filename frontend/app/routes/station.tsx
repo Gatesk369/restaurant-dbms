@@ -43,8 +43,6 @@ const IDLE_RESET_MS = 5 * 60_000;
 
 export async function clientLoader() {
   const [menu, apiTables] = await Promise.all([listPublicMenu(), fetchTables()]);
-  // Without a tables endpoint (gap G1) every configured table is offered; a
-  // customer cannot see which ones are in use.
   const tables: Table[] = apiTables ?? deriveTables(parseTableIds(tableIdsSpec), []);
   return { menu, tables };
 }
@@ -57,6 +55,7 @@ function messageOf(error: unknown): string {
 
 export default function Station() {
   const { menu, tables } = useLoaderData<typeof clientLoader>();
+  const [tableList, setTableList] = useState(tables);
 
   const [draft, setDraft] = useState<StationDraft>(loadDraft);
   const patch = (changes: Partial<StationDraft>) => setDraft((d) => ({ ...d, ...changes }));
@@ -137,6 +136,11 @@ export default function Station() {
           ...(note ? { special_instructions: note } : {}),
         })),
       );
+      void fetchTables()
+        .then((fresh) => {
+          if (fresh) setTableList(fresh);
+        })
+        .catch(() => undefined);
       setPlaced(order);
       setLocalStep(0);
       patch({ screen: "done", orderId: order.order_id });
@@ -152,6 +156,16 @@ export default function Station() {
       setSending(false);
     }
   }
+
+  // Keep the table picker current when another station places or pays an order.
+  usePoll(() => {
+    if (draft.screen !== "start") return;
+    void fetchTables()
+      .then((fresh) => {
+        if (fresh) setTableList(fresh);
+      })
+      .catch(() => undefined);
+  }, 5_000);
 
   function reset() {
     clearDraft();
@@ -215,7 +229,7 @@ export default function Station() {
       <div className="relative flex flex-1 flex-col">
         {draft.screen === "start" ? (
           <TableStep
-            tables={tables}
+            tables={tableList}
             table={draft.table}
             onPick={(id) => patch({ table: id })}
             starting={starting}

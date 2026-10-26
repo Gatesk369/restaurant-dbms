@@ -1,5 +1,8 @@
 from django.urls import path
 
-from seating.views import CustomerCreateView
+from seating.views import CustomerCreateView, TableListView
 
-urlpatterns = [path("customers/", CustomerCreateView.as_view())]
+urlpatterns = [
+    path("tables/", TableListView.as_view()),
+    path("customers/", CustomerCreateView.as_view()),
+]

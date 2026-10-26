@@ -1,3 +1,4 @@
+from db_access import fetch_one
 from django.test import TestCase
 from factories import make_table
 from rest_framework.test import APIClient
@@ -26,3 +27,24 @@ class CustomerCreateTests(TestCase):
         self.assertEqual(self.post("abc").status_code, 400)
         self.assertEqual(self.post(None).status_code, 400)
         self.assertEqual(self.post(-5).status_code, 400)
+
+
+class TableListTests(TestCase):
+    def test_lists_all_tables_with_their_current_occupancy(self):
+        free = make_table()
+        occupied = make_table()
+        fetch_one(
+            "UPDATE tables SET free_status = FALSE WHERE table_id = %s RETURNING table_id",
+            (occupied["table_id"],),
+        )
+
+        response = APIClient().get("/api/tables/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data,
+            [
+                {"table_id": free["table_id"], "free_status": True},
+                {"table_id": occupied["table_id"], "free_status": False},
+            ],
+        )

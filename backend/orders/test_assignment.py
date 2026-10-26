@@ -81,12 +81,12 @@ class CustomerOrderAutoAssignTests(TestCase):
         self.item = make_menu_item("Tea", 3000)
         self.client = APIClient()
 
-    def place(self):
+    def place(self, customer=None):
         return self.client.post(
             "/api/my/orders/",
             {"items": [{"menu_item_id": self.item["menu_item_id"], "quantity": 1}]},
             format="json",
-            HTTP_X_SESSION_TOKEN=self.customer["session_token"],
+            HTTP_X_SESSION_TOKEN=(customer or self.customer)["session_token"],
         )
 
     def test_order_placed_through_api_is_confirmed_when_a_waiter_is_free(self):
@@ -96,7 +96,8 @@ class CustomerOrderAutoAssignTests(TestCase):
 
     def test_customer_orders_wait_until_the_assigned_waiter_finishes(self):
         first = self.place().data
-        second = self.place()
+        another_customer = make_customer(make_table()["table_id"])
+        second = self.place(another_customer)
         self.assertEqual(second.status_code, 201)
         self.assertEqual(second.data["order_status"], "pending")
         self.assertIsNone(Order.get(second.data["order_id"])["staff_id"])
