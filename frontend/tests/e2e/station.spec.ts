@@ -54,6 +54,8 @@ async function toReview(page: Page) {
 test.describe("responsive ordering appearance", () => {
   test("walks the four steps with cashier-only payment selection", async ({ page }) => {
     await openStation(page);
+    await expect(page.getByLabel("Your name (optional)")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Call a waiter" })).toHaveCount(0);
     await settle(page);
     await expect(page).toHaveScreenshot("responsive-station-1-table.png");
 
@@ -421,21 +423,6 @@ test.describe("the header", () => {
     await expect(steps.nth(1)).toHaveAttribute("aria-label", "Step 2 of 4, Menu, current");
     await expect(steps.nth(1)).toHaveAttribute("aria-current", "step");
   });
-
-  test("calls a waiter with a toast that fades after four seconds", async ({ page }) => {
-    await openStation(page, FULL, true);
-    await page.getByRole("button", { name: "Call a waiter" }).click();
-    await expect(page.getByText("A waiter is on the way.")).toBeVisible();
-
-    await page.clock.runFor(3_000);
-    await expect(page.getByText("A waiter is on the way.")).toBeVisible();
-    await page.clock.runFor(1_500);
-    await expect(page.getByText("A waiter is on the way.")).toHaveCount(0);
-
-    await table(page, 6).click();
-    await page.getByRole("button", { name: "Call a waiter" }).click();
-    await expect(page.getByText("A waiter is on the way to Table 6.")).toBeVisible();
-  });
 });
 
 test.describe("the canvas", () => {
@@ -454,12 +441,11 @@ test.describe("the canvas", () => {
 
   test("forgets the last customer after five idle minutes", async ({ page }) => {
     await openStation(page, FULL, true);
-    await page.getByLabel("Your name (optional)").fill("Atim");
     await table(page, 6).click();
     await expect(table(page, 6)).toHaveAttribute("aria-pressed", "true");
 
     await page.clock.runFor(5 * 60_000 + 1_000);
-    await expect(page.getByLabel("Your name (optional)")).toHaveValue("");
+    await expect(table(page, 6)).toHaveAttribute("aria-pressed", "false");
     await expect(start(page)).toBeDisabled();
   });
 

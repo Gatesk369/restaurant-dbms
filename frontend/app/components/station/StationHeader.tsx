@@ -1,15 +1,13 @@
-import { Button } from "~/components/ui/Button";
 import { Icon } from "~/components/ui/Icon";
 import { STATION_STEPS } from "~/lib/domain/station";
 
 interface StationHeaderProps {
   /** 0 to 3: the screen the customer is on. */
   current: number;
-  onCallWaiter: () => void;
 }
 
-/** Wrapping forest bar: wordmark, four-step progress, Call a waiter. */
-export function StationHeader({ current, onCallWaiter }: StationHeaderProps) {
+/** Wrapping forest bar: wordmark and four-step progress. */
+export function StationHeader({ current }: StationHeaderProps) {
   return (
     <header className="station-header on-forest box-border flex min-h-18 flex-none items-center justify-between gap-6 bg-forest px-6 text-page">
       <span className="text-wordmark">Restaurant DBMS</span>
@@ -55,11 +53,6 @@ export function StationHeader({ current, onCallWaiter }: StationHeaderProps) {
           );
         })}
       </ol>
-
-      <Button variant="tonal" size="touchSm" onClick={onCallWaiter}>
-        <Icon name="bell" />
-        Call a waiter
-      </Button>
     </header>
   );
 }

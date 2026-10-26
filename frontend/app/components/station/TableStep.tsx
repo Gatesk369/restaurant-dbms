@@ -1,5 +1,5 @@
 import { Button } from "~/components/ui/Button";
-import { Field, FieldError, Input } from "~/components/ui/Field";
+import { FieldError } from "~/components/ui/Field";
 import { TableTile } from "~/components/ui/TableTile";
 import type { Table } from "~/lib/api/types";
 import { tableAriaLabel, tableLabel, tableSub } from "~/lib/domain/tables";
@@ -8,24 +8,13 @@ interface TableStepProps {
   tables: readonly Table[];
   table: number | null;
   onPick: (tableId: number) => void;
-  guestName: string;
-  onGuestName: (value: string) => void;
   starting: boolean;
   error: string | null;
   onStart: () => void;
 }
 
-/** Step 1: an optional name and a table grid that reflows with the viewport. */
-export function TableStep({
-  tables,
-  table,
-  onPick,
-  guestName,
-  onGuestName,
-  starting,
-  error,
-  onStart,
-}: TableStepProps) {
+/** Step 1: choose a table from a grid that reflows with the viewport. */
+export function TableStep({ tables, table, onPick, starting, error, onStart }: TableStepProps) {
   return (
     <div className="station-step station-table box-border flex flex-1 items-center gap-16 px-12 py-8">
       <fieldset disabled={starting} className="contents">
@@ -37,16 +26,6 @@ export function TableStep({
               you.
             </p>
           </div>
-
-          <Field label="Your name (optional)">
-            <Input
-              controlSize="touch"
-              autoComplete="off"
-              placeholder="So the waiter knows who to look for"
-              value={guestName}
-              onChange={(e) => onGuestName(e.target.value)}
-            />
-          </Field>
 
           <Button
             size="touch"
