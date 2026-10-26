@@ -7,7 +7,6 @@ import type { StationScreen } from "./domain/station";
 export interface StationDraft {
   screen: StationScreen;
   table: number | null;
-  guestName: string;
   category: string;
   lines: { menu_item_id: number; quantity: number }[];
   notes: string;
@@ -20,7 +19,6 @@ const KEY = "rdbms.station";
 export const EMPTY_DRAFT: StationDraft = {
   screen: "start",
   table: null,
-  guestName: "",
   category: "Mains",
   lines: [],
   notes: "",
@@ -38,7 +36,6 @@ export function loadDraft(): StationDraft {
     return {
       screen: data.screen,
       table: data.table ?? EMPTY_DRAFT.table,
-      guestName: data.guestName ?? EMPTY_DRAFT.guestName,
       category: data.category ?? EMPTY_DRAFT.category,
       lines: data.lines ?? EMPTY_DRAFT.lines,
       notes: data.notes ?? EMPTY_DRAFT.notes,

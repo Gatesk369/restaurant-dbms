@@ -35,10 +35,9 @@ describe("card art", () => {
 });
 
 describe("wording", () => {
-  it("says which table and, when given, whose", () => {
-    expect(orderFor(null, "")).toBe("No table chosen");
-    expect(orderFor(6, "")).toBe("Table 6");
-    expect(orderFor(6, "  Atim ")).toBe("Table 6 · Atim");
+  it("says which table is selected", () => {
+    expect(orderFor(null)).toBe("No table chosen");
+    expect(orderFor(6)).toBe("Table 6");
   });
 });
 

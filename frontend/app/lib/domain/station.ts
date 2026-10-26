@@ -65,9 +65,7 @@ export function placeholderImage(name: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-/** "Table 6" or "Table 6 · Atim" (the name stays on this device, gap G4). */
-export function orderFor(table: number | null, guestName: string): string {
-  const label = table ? `Table ${table}` : "No table chosen";
-  const name = guestName.trim();
-  return name ? `${label} · ${name}` : label;
+/** The selected table's label for the order summary. */
+export function orderFor(table: number | null): string {
+  return table ? `Table ${table}` : "No table chosen";
 }

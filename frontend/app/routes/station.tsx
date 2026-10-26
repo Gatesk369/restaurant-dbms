@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLoaderData } from "react-router";
 
 import type { Route } from "./+types/station";
@@ -8,7 +8,6 @@ import { ReviewStep } from "~/components/station/ReviewStep";
 import { StationCanvas } from "~/components/station/StationCanvas";
 import { StationHeader } from "~/components/station/StationHeader";
 import { TableStep } from "~/components/station/TableStep";
-import { StationToast } from "~/components/ui/Toast";
 import { ApiError } from "~/lib/api/client";
 import { listPublicMenu } from "~/lib/api/menu";
 import { fetchMyOrder, sendOrder, startTableSession } from "~/lib/api/station";
@@ -41,7 +40,6 @@ export function meta({}: Route.MetaArgs) {
 
 const TRACK_POLL_MS = 5_000;
 const IDLE_RESET_MS = 5 * 60_000;
-const TOAST_MS = 4_000;
 
 export async function clientLoader() {
   const [menu, apiTables] = await Promise.all([listPublicMenu(), fetchTables()]);
@@ -64,16 +62,12 @@ export default function Station() {
   const patch = (changes: Partial<StationDraft>) => setDraft((d) => ({ ...d, ...changes }));
   useEffect(() => saveDraft(draft), [draft]);
 
-  const [toast, setToast] = useState("");
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<Order | null>(null);
   const [localStep, setLocalStep] = useState(0);
-
-  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   // --- menu ---------------------------------------------------------------
   const menuById = useMemo(() => new Map(menu.map((i) => [i.menu_item_id, i])), [menu]);
@@ -105,14 +99,6 @@ export default function Station() {
   }
 
   // --- actions ------------------------------------------------------------
-  function callWaiter() {
-    setToast(
-      draft.table ? `A waiter is on the way to Table ${draft.table}.` : "A waiter is on the way.",
-    );
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), TOAST_MS);
-  }
-
   async function startOrder() {
     if (draft.table === null || starting) return;
     setStarting(true);
@@ -175,7 +161,6 @@ export default function Station() {
     setLocalStep(0);
     setStartError(null);
     setSendError(null);
-    setToast("");
   }
 
   // --- tracker ------------------------------------------------------------
@@ -207,7 +192,7 @@ export default function Station() {
   const step = Math.max(apiStep ?? 0, localStep);
 
   // --- render -------------------------------------------------------------
-  const description = orderForText(draft.table, draft.guestName);
+  const description = orderForText(draft.table);
   const orderNo = draft.orderId !== null ? `ORD-${draft.orderId}` : "";
   const doneTotal = placed?.total ?? total;
   const summary = placed
@@ -225,18 +210,14 @@ export default function Station() {
 
   return (
     <StationCanvas>
-      <StationHeader current={SCREEN_INDEX[draft.screen]} onCallWaiter={callWaiter} />
+      <StationHeader current={SCREEN_INDEX[draft.screen]} />
 
       <div className="relative flex flex-1 flex-col">
-        {toast ? <StationToast>{toast}</StationToast> : null}
-
         {draft.screen === "start" ? (
           <TableStep
             tables={tables}
             table={draft.table}
             onPick={(id) => patch({ table: id })}
-            guestName={draft.guestName}
-            onGuestName={(value) => patch({ guestName: value })}
             starting={starting}
             error={startError}
             onStart={() => void startOrder()}
