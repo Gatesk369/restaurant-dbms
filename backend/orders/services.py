@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from db_access import fetch_all, fetch_one
 from django.db import transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import APIException, NotFound, ValidationError
 
 from orders.models import Order, OrderItem
 
@@ -10,6 +10,12 @@ MAX_LINES = 30
 MAX_QUANTITY = 50
 INT_MAX = 2**31 - 1
 ORDER_COLUMNS = "order_id, table_id, order_status, order_time"
+
+
+class TableOccupied(APIException):
+    status_code = 409
+    default_detail = "This table is occupied until its order is paid."
+    default_code = "table_occupied"
 
 
 def _clean_items(raw_items):
@@ -118,8 +124,35 @@ def place_order(customer, raw_items):
 
     # table comes from the customer's session, never from the request body
     with transaction.atomic():
+        # Serialize orders for a table, and check the underlying unpaid orders
+        # rather than trusting free_status, which is only a cached display flag.
+        table = fetch_one(
+            "SELECT table_id FROM tables WHERE table_id = %s FOR UPDATE",
+            (customer.table_id,),
+        )
+        if table is None:
+            raise ValidationError({"detail": "Your table no longer exists."})
+        occupied = fetch_one(
+            """SELECT 1 AS occupied
+                 FROM orders o
+                WHERE o.table_id = %s
+                  AND o.order_status <> 'cancelled'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM payments p WHERE p.order_id = o.order_id
+                  )
+                LIMIT 1""",
+            (customer.table_id,),
+        )
+        if occupied:
+            raise TableOccupied()
+
         order = Order.create(
             customer_id=customer.customer_id, table_id=customer.table_id
+        )
+        # Keep station listings correct even if the occupancy trigger is absent.
+        fetch_one(
+            "UPDATE tables SET free_status = FALSE WHERE table_id = %s RETURNING table_id",
+            (customer.table_id,),
         )
         for line in cleaned:
             OrderItem.create(order_id=order["order_id"], **line)

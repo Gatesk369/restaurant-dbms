@@ -113,6 +113,27 @@ test.describe("choosing a table", () => {
     await expect(page.getByText("Tables marked In use already have an order open.")).toBeVisible();
   });
 
+  test("marks the table occupied after an order is sent", async ({ page }) => {
+    await openStation(page);
+    await toReview(page);
+    await send(page).click();
+    await expect(page.getByRole("heading", { name: "Order sent to the kitchen" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Start a new order" }).click();
+
+    await expect(page.getByRole("button", { name: "Table 6, in use" })).toBeDisabled();
+  });
+
+  test("refreshes occupancy while the table picker is open", async ({ page }) => {
+    const api = await openStation(page, FULL, true);
+    const six = api.tables.find((row) => row.table_id === 6)!;
+    six.free_status = false;
+
+    await page.clock.fastForward(5_000);
+
+    await expect(page.getByRole("button", { name: "Table 6, in use" })).toBeDisabled();
+  });
+
   test("offers every configured table while the API cannot list them", async ({ page }) => {
     await openStation(page, { publicMenuSoldOut: true });
     // No seats and no occupancy are known, so tiles say Free.

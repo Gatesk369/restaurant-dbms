@@ -33,6 +33,15 @@ function mockLogin(status: number, body: unknown) {
     .mockImplementation(() => Promise.resolve(new Response(JSON.stringify(body), { status })));
 }
 
+async function enterCredentials(username: string, password: string) {
+  const usernameInput = await screen.findByLabelText("Username");
+  const passwordInput = screen.getByLabelText("Password");
+  await userEvent.clear(usernameInput);
+  await userEvent.type(usernameInput, username);
+  await userEvent.clear(passwordInput);
+  await userEvent.type(passwordInput, password);
+}
+
 const peter = {
   staff_id: 1004,
   username: "okello.peter",
@@ -61,8 +70,7 @@ describe("sign-in form", () => {
   it("explains the credential rule without calling the API", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     mountSignIn();
-    await userEvent.type(await screen.findByLabelText("Username"), "okello.peter");
-    await userEvent.type(screen.getByLabelText("Password"), "abc");
+    await enterCredentials("okello.peter", "abc");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -74,8 +82,7 @@ describe("sign-in form", () => {
   it("shows the server's message when the credentials are wrong", async () => {
     mockLogin(401, { detail: "Invalid username or password." });
     mountSignIn();
-    await userEvent.type(await screen.findByLabelText("Username"), "okello.peter");
-    await userEvent.type(screen.getByLabelText("Password"), "wrong-password");
+    await enterCredentials("okello.peter", "wrong-password");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -87,8 +94,7 @@ describe("sign-in form", () => {
   it("clears the error as soon as a field is edited, and shows a repeat failure again", async () => {
     mockLogin(401, { detail: "Invalid username or password." });
     mountSignIn();
-    await userEvent.type(await screen.findByLabelText("Username"), "okello.peter");
-    await userEvent.type(screen.getByLabelText("Password"), "wrong-password");
+    await enterCredentials("okello.peter", "wrong-password");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     await screen.findByRole("alert");
 
@@ -102,8 +108,7 @@ describe("sign-in form", () => {
   it("reports an unreachable server", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
     mountSignIn();
-    await userEvent.type(await screen.findByLabelText("Username"), "okello.peter");
-    await userEvent.type(screen.getByLabelText("Password"), "DemoPass123!");
+    await enterCredentials("okello.peter", "DemoPass123!");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Error: Could not reach the server");
   });
@@ -127,8 +132,7 @@ describe("direct workspace entry", () => {
   it.each(roles)("sends authenticated %s directly to %s", async (role, path, heading) => {
     const fetchSpy = mockLogin(200, { token: "tok", staff: { ...peter, role } });
     const router = mountSignIn();
-    await userEvent.type(await screen.findByLabelText("Username"), "okello.peter");
-    await userEvent.type(screen.getByLabelText("Password"), "DemoPass123!");
+    await enterCredentials("okello.peter", "DemoPass123!");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByText(heading)).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(path);
@@ -156,8 +160,7 @@ describe("direct workspace entry", () => {
     mockLogin(200, { token: "tok", staff: { ...peter, role: "cashier" } });
     const router = mountSignIn("/?next=https://example.com&returnTo=/reports");
     await userEvent.click(await screen.findByRole("radio", { name: /^Manager/ }));
-    await userEvent.type(screen.getByLabelText("Username"), "amina");
-    await userEvent.type(screen.getByLabelText("Password"), "secret123");
+    await enterCredentials("amina", "secret123");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByText("Payments screen")).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/payments");

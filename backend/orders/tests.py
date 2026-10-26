@@ -1,5 +1,6 @@
 from django.test import TestCase
-from factories import make_customer, make_menu_item, make_table
+from factories import make_customer, make_menu_item, make_staff, make_table
+from payments.models import Payment
 from rest_framework.test import APIClient
 from seating.models import Table
 
@@ -56,6 +57,28 @@ class CustomerOrderTests(TestCase):
         self.assertTrue(self.is_free())
         self.place(self.cart())
         self.assertFalse(self.is_free())
+
+    def test_rejects_another_order_until_the_existing_one_is_paid(self):
+        first = self.place(self.cart())
+        self.assertEqual(first.status_code, 201)
+
+        second = self.place(self.cart())
+
+        self.assertEqual(second.status_code, 409)
+        self.assertEqual(
+            second.data["detail"], "This table is occupied until its order is paid."
+        )
+
+        Order.update(first.data["order_id"], order_status="served")
+        cashier = make_staff("table_test_cashier", role="cashier")
+        Payment.create(
+            order_id=first.data["order_id"],
+            amount=first.data["total"],
+            payment_method="Cash",
+            cashier_id=cashier["staff_id"],
+        )
+
+        self.assertEqual(self.place(self.cart()).status_code, 201)
 
     def test_requires_token(self):
         r = self.client.post("/api/my/orders/", {"items": self.cart()}, format="json")

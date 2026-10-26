@@ -9,6 +9,14 @@ from rest_framework.views import APIView
 from seating.models import Customer, Table
 
 
+class TableListView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(Table.all())
+
+
 class CustomerCreateView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
