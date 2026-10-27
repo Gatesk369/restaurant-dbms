@@ -107,9 +107,9 @@ pytest
 
 ## Load demonstration data
 
-Use `seed.sql` only with a dedicated empty development database. It inserts 20 rows into each project table; the schema triggers compute order-item subtotals, create sales records from payments, and release paid tables. Do not run it against the shared Neon branch.
+Use `seed.sql` only with a dedicated development database whose schema and menu items are already in place. It atomically replaces the demonstration tables, staff, customers, orders, order items, payments, and sales records while preserving every `menu_items` row. It creates randomized activity over the prior 60 days through the current day, including every supported order state. The schema triggers compute item subtotals and create sales records from payments. Do not run it against the shared Neon branch.
 
-After setting `DATABASE_URL_UNPOOLED` in `.env`, initialize the schema and load the sample data from `backend/`:
+After setting `DATABASE_URL_UNPOOLED` to a dedicated development database and ensuring it has menu items, load or refresh the sample data from `backend/`:
 
 ```bash
 python manage.py init_sql_schema
