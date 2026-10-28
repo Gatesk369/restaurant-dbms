@@ -86,3 +86,60 @@ SELECT s.staff_id, s.username,
  WHERE s.role = 'wait_staff'
  GROUP BY s.staff_id, s.username
  ORDER BY revenue DESC, s.username;
+
+
+-- ---------------------------------------------------------------------------
+-- Query 4: Table turnover
+--
+-- Purpose: how busy each table is: how many paid orders and separate parties
+--          (customer sessions) it served, and how many parties per day.
+-- Tables:  TABLES (every table, so idle ones still appear),
+--          ORDERS (table_id and customer_id of each order),
+--          SALES_RECORD (paid orders in the range and their total_amount).
+-- Output:  table_id | orders_paid | parties_served | revenue | turnover_per_day
+--          parties_served counts different customers whose order was paid;
+--          one party can place several orders. turnover_per_day is
+--          parties_served divided by the number of days in the range. (The
+--          app computes that division in Python; it is written in SQL here
+--          so the whole report reads in one place.)
+-- ---------------------------------------------------------------------------
+SELECT t.table_id,
+       COUNT(sr.sales_record_id) AS orders_paid,
+       COUNT(DISTINCT o.customer_id)
+           FILTER (WHERE sr.sales_record_id IS NOT NULL) AS parties_served,
+       COALESCE(SUM(sr.total_amount), 0) AS revenue,
+       ROUND(COUNT(DISTINCT o.customer_id)
+                 FILTER (WHERE sr.sales_record_id IS NOT NULL)::numeric
+             / (:'to'::date - :'from'::date + 1), 2) AS turnover_per_day
+  FROM tables t
+  LEFT JOIN orders o ON o.table_id = t.table_id
+  LEFT JOIN sales_record sr
+         ON sr.order_id = o.order_id AND sr.sale_date BETWEEN :'from' AND :'to'
+ GROUP BY t.table_id
+ ORDER BY t.table_id;
+
+
+-- ---------------------------------------------------------------------------
+-- Query 5: Payment method distribution
+--
+-- Purpose: how guests paid: the number of payments and revenue taken in Cash
+--          and in Mobile Money (the pie chart on the Reports page).
+-- Tables:  PAYMENTS (payment_method, amount),
+--          SALES_RECORD (limits to payments with a sale date in the range).
+-- Output:  payment_method | payments | revenue
+--          Both methods always appear, even with no payments: the VALUES
+--          list supplies the two method names and the LEFT JOIN fills in the
+--          figures (0 when there are none). Highest revenue first.
+-- ---------------------------------------------------------------------------
+SELECT m.method AS payment_method,
+       COUNT(x.sales_record_id) AS payments,
+       COALESCE(SUM(x.amount), 0) AS revenue
+  FROM (VALUES ('Cash'), ('Mobile Money')) AS m(method)
+  LEFT JOIN (
+       SELECT p.payment_method, p.amount, sr.sales_record_id
+         FROM payments p
+         JOIN sales_record sr ON sr.payment_id = p.payment_id
+        WHERE sr.sale_date BETWEEN :'from' AND :'to'
+       ) x ON x.payment_method = m.method
+ GROUP BY m.method
+ ORDER BY revenue DESC, m.method;
