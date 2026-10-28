@@ -92,22 +92,32 @@ SELECT s.staff_id, s.username,
 -- Query 4: Table turnover
 --
 -- Purpose: how busy each table is: how many paid orders and separate parties
---          (customer sessions) it served, and how many parties per day.
+--          (customer sessions) it served, how many parties per day, and how
+--          long a party typically occupies the table.
 -- Tables:  TABLES (every table, so idle ones still appear),
---          ORDERS (table_id and customer_id of each order),
---          SALES_RECORD (paid orders in the range and their total_amount).
--- Output:  table_id | orders_paid | parties_served | revenue | turnover_per_day
+--          ORDERS (table_id, customer_id and order_time of each order),
+--          SALES_RECORD (paid orders in the range and their total_amount),
+--          PAYMENTS (transaction_time: when the bill was paid).
+-- Output:  table_id | orders_paid | parties_served | revenue
+--          | avg_stay_minutes | turnover_per_day
 --          parties_served counts different customers whose order was paid;
 --          one party can place several orders. turnover_per_day is
 --          parties_served divided by the number of days in the range. (The
 --          app computes that division in Python; it is written in SQL here
 --          so the whole report reads in one place.)
+--          avg_stay_minutes is the average time from order_time to the
+--          payment's transaction_time, in whole minutes: how long the table
+--          is occupied per order, from ordering to settling the bill. It is
+--          NULL for a table with no paid orders in the range, since AVG
+--          ignores the NULL rows the LEFT JOINs produce.
 -- ---------------------------------------------------------------------------
 SELECT t.table_id,
        COUNT(sr.sales_record_id) AS orders_paid,
        COUNT(DISTINCT o.customer_id)
            FILTER (WHERE sr.sales_record_id IS NOT NULL) AS parties_served,
        COALESCE(SUM(sr.total_amount), 0) AS revenue,
+       ROUND(AVG(EXTRACT(EPOCH FROM p.transaction_time - o.order_time)) / 60)
+           AS avg_stay_minutes,
        ROUND(COUNT(DISTINCT o.customer_id)
                  FILTER (WHERE sr.sales_record_id IS NOT NULL)::numeric
              / (:'to'::date - :'from'::date + 1), 2) AS turnover_per_day
@@ -115,6 +125,7 @@ SELECT t.table_id,
   LEFT JOIN orders o ON o.table_id = t.table_id
   LEFT JOIN sales_record sr
          ON sr.order_id = o.order_id AND sr.sale_date BETWEEN :'from' AND :'to'
+  LEFT JOIN payments p ON p.payment_id = sr.payment_id
  GROUP BY t.table_id
  ORDER BY t.table_id;
 
