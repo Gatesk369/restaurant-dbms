@@ -59,3 +59,30 @@ SELECT mi.menu_item_id, mi.item_name,
  GROUP BY mi.menu_item_id, mi.item_name
  ORDER BY units_sold DESC, revenue DESC, mi.item_name
  LIMIT 6;
+
+
+-- ---------------------------------------------------------------------------
+-- Query 3: Waiter performance
+--
+-- Purpose: how many paid orders each waiter handled and how much revenue
+--          those orders brought in.
+-- Tables:  STAFF (the waiters: role = 'wait_staff'),
+--          ORDERS (staff_id links an order to the waiter assigned to it),
+--          SALES_RECORD (paid orders in the range and their total_amount).
+-- Output:  staff_id | username | orders_handled | revenue | avg_order_value
+--          Every waiter is listed, including those with no sales in the range
+--          (0 orders, 0 revenue), because STAFF is the left side of LEFT
+--          JOINs. The date filter sits in the JOIN condition, not in WHERE,
+--          so it does not drop those waiters. Highest revenue first.
+-- ---------------------------------------------------------------------------
+SELECT s.staff_id, s.username,
+       COUNT(sr.sales_record_id) AS orders_handled,
+       COALESCE(SUM(sr.total_amount), 0) AS revenue,
+       COALESCE(ROUND(AVG(sr.total_amount), 2), 0) AS avg_order_value
+  FROM staff s
+  LEFT JOIN orders o ON o.staff_id = s.staff_id
+  LEFT JOIN sales_record sr
+         ON sr.order_id = o.order_id AND sr.sale_date BETWEEN :'from' AND :'to'
+ WHERE s.role = 'wait_staff'
+ GROUP BY s.staff_id, s.username
+ ORDER BY revenue DESC, s.username;
