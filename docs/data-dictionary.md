@@ -219,11 +219,22 @@ days.
 | Daily sales | `GET /api/staff/reports/daily-sales/` | `sales_record` | Daily orders, revenue, average order value, including zero-sale days |
 | Top menu items | `GET /api/staff/reports/top-items/` | `sales_record`, `order_items`, `menu_items` | Units sold and revenue by menu item |
 | Waiter performance | `GET /api/staff/reports/waiter-performance/` | `staff`, `orders`, `sales_record` | Orders handled, revenue, and average order value per waiter |
-| Table turnover | `GET /api/staff/reports/table-turnover/` | `tables`, `orders`, `sales_record` | Paid orders, parties served, revenue, and turnover per day |
+| Table turnover | `GET /api/staff/reports/table-turnover/` | `tables`, `orders`, `sales_record`, `payments` | Paid orders, parties served, revenue, turnover per day, and average stay (`avg_stay_minutes`) |
 | Payment methods | `GET /api/staff/reports/payment-methods/` | `payments`, `sales_record` | Payment count and revenue split for Cash and Mobile Money |
 
-The report API supplies structured data for textual summaries and future
-frontend charts. Graphical presentation is tracked in issue #4.
+`avg_stay_minutes` is the average time, in whole minutes, from an order's
+`order_time` to its payment's `transaction_time`, over the table's paid orders
+in the range. It is `null` for a table with no paid orders in the range.
+
+The same queries are collected, numbered and commented in
+[`backend/reports.sql`](../backend/reports.sql), which can be run directly with
+psql (`-v from=YYYY-MM-DD -v to=YYYY-MM-DD`).
+
+The manager-only Reports page (`/reports`) presents them graphically: a
+revenue bar chart (daily sales), a Cash vs Mobile Money donut (payment
+methods), and a units-sold bar chart of the six best sellers (item
+popularity). Below the charts, tables show top items, waiter performance,
+daily sales, and table turnover with the average stay.
 
 ## Trigger and Validation Rules
 
