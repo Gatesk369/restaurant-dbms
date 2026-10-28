@@ -33,3 +33,29 @@ SELECT d::date AS sale_date,
   LEFT JOIN sales_record sr ON sr.sale_date = d::date
  GROUP BY d
  ORDER BY d;
+
+
+-- ---------------------------------------------------------------------------
+-- Query 2: Top-selling menu items
+--
+-- Purpose: rank the menu items by how many units were sold, with the revenue
+--          each one brought in.
+-- Tables:  SALES_RECORD (keeps only paid orders and gives the sale date),
+--          ORDER_ITEMS (quantity and item_subtotal of every line),
+--          MENU_ITEMS (item_name).
+-- Output:  menu_item_id | item_name | units_sold | revenue
+--          units_sold is SUM(quantity); revenue is SUM(item_subtotal), the
+--          price x quantity worked out by the order_items trigger. Ties on
+--          units are broken by revenue, then by name. The app shows the top
+--          six (LIMIT 6).
+-- ---------------------------------------------------------------------------
+SELECT mi.menu_item_id, mi.item_name,
+       SUM(oi.quantity) AS units_sold,
+       SUM(oi.item_subtotal) AS revenue
+  FROM sales_record sr
+  JOIN order_items oi ON oi.order_id = sr.order_id
+  JOIN menu_items mi ON mi.menu_item_id = oi.menu_item_id
+ WHERE sr.sale_date BETWEEN :'from' AND :'to'
+ GROUP BY mi.menu_item_id, mi.item_name
+ ORDER BY units_sold DESC, revenue DESC, mi.item_name
+ LIMIT 6;
