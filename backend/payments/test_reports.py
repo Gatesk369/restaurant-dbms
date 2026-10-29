@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.test import TestCase
 from factories import login_as, make_customer, make_menu_item, make_staff, make_table
 from orders.models import Order, OrderItem
@@ -18,12 +20,14 @@ class ReportTests(TestCase):
         self.luwombo = make_menu_item("Luwombo", 25000)
 
         # two paid orders: w1 gets the first (31,000 cash), w2 the second (25,000 mobile money)
-        self.paid_order(self.t1, [(self.tea, 2), (self.luwombo, 1)], "Cash")
-        self.paid_order(self.t2, [(self.luwombo, 1)], "Mobile Money")
+        self.first = self.paid_order(
+            self.t1, [(self.tea, 2), (self.luwombo, 1)], "Cash"
+        )
+        self.second = self.paid_order(self.t2, [(self.luwombo, 1)], "Mobile Money")
 
         # an unpaid order that no report may count
         customer = make_customer(self.t1["table_id"])
-        unpaid = Order.create(
+        self.unpaid = unpaid = Order.create(
             customer_id=customer["customer_id"], table_id=self.t1["table_id"]
         )
         OrderItem.create(
@@ -50,6 +54,15 @@ class ReportTests(TestCase):
             amount=total,
             payment_method=method,
             cashier_id=self.cashier["staff_id"],
+        )
+        return order
+
+    def placed_before_payment(self, order, minutes):
+        # NOW() is fixed inside the test transaction, so the order and its
+        # payment share a timestamp until the order time is moved back.
+        Order.update(
+            order["order_id"],
+            order_time=order["order_time"] - timedelta(minutes=minutes),
         )
 
     def get(self, name, **params):
@@ -134,6 +147,28 @@ class ReportTests(TestCase):
         self.assertEqual(rows[0]["orders_paid"], 1)
         self.assertEqual(rows[0]["revenue"], 31000)
         self.assertEqual(rows[0]["turnover_per_day"], 0.03)  # 1 party / 30 days
+
+    def test_table_turnover_average_stay(self):
+        # table 1: a second paid party, plus the unpaid order from setUp
+        third = self.paid_order(self.t1, [(self.tea, 1)], "Cash")
+        self.placed_before_payment(self.first, 40)
+        self.placed_before_payment(third, 60)
+        self.placed_before_payment(self.second, 25)
+        self.placed_before_payment(self.unpaid, 300)  # never paid, so ignored
+
+        rows = self.get("table-turnover").data["rows"]
+        self.assertEqual(rows[0]["avg_stay_minutes"], 50)  # (40 + 60) / 2
+        self.assertEqual(rows[1]["avg_stay_minutes"], 25)
+
+    def test_average_stay_is_null_without_paid_orders(self):
+        make_table()
+        rows = self.get("table-turnover").data["rows"]
+        self.assertIsNone(rows[2]["avg_stay_minutes"])  # the new table has no orders
+
+        rows = self.get(
+            "table-turnover", **{"from": "2020-01-01", "to": "2020-01-03"}
+        ).data["rows"]
+        self.assertTrue(all(r["avg_stay_minutes"] is None for r in rows))
 
     # --- payment methods ---
 

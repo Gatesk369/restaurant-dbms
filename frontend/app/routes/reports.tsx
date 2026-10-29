@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 
 import type { Route } from "./+types/reports";
+import { ItemPopularityBars } from "~/components/charts/ItemPopularityBars";
 import { PaymentDonut } from "~/components/charts/PaymentDonut";
 import { RevenueBars } from "~/components/charts/RevenueBars";
 import { PageHeader } from "~/components/staff/PageHeader";
@@ -171,6 +172,13 @@ export default function Reports() {
               <PaymentDonut slices={view.slices} total={view.methodTotal} />
             </Panel>
           </div>
+          <Panel sizing="content">
+            <PanelHeading
+              title="Item popularity"
+              caption="Units sold of the six best sellers, from ORDER_ITEMS. The best seller is darker."
+            />
+            <ItemPopularityBars rows={bundle.topItems} />
+          </Panel>
           <PaidOrderHistory
             id="history"
             page={history}

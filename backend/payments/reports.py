@@ -88,18 +88,22 @@ def waiter_performance(start, end):
 
 def table_turnover(start, end):
     """parties_served = different customer sessions that paid at the table.
-    turnover_per_day = parties_served / days in range."""
+    turnover_per_day = parties_served / days in range.
+    avg_stay_minutes = average minutes from order to payment, None if no paid orders."""
     days = (end - start).days + 1
     rows = fetch_all(
         """SELECT t.table_id,
                   COUNT(sr.sales_record_id) AS orders_paid,
                   COUNT(DISTINCT o.customer_id)
                       FILTER (WHERE sr.sales_record_id IS NOT NULL) AS parties_served,
-                  COALESCE(SUM(sr.total_amount), 0) AS revenue
+                  COALESCE(SUM(sr.total_amount), 0) AS revenue,
+                  ROUND(AVG(EXTRACT(EPOCH FROM p.transaction_time - o.order_time)) / 60)
+                      AS avg_stay_minutes
              FROM tables t
              LEFT JOIN orders o ON o.table_id = t.table_id
              LEFT JOIN sales_record sr
                     ON sr.order_id = o.order_id AND sr.sale_date BETWEEN %s AND %s
+             LEFT JOIN payments p ON p.payment_id = sr.payment_id
             GROUP BY t.table_id
             ORDER BY t.table_id""",
         (start, end),

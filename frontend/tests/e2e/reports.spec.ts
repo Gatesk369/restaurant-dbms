@@ -229,6 +229,21 @@ test.describe("the figures", () => {
     await expect(waiters.getByRole("row").nth(1)).toContainText("130");
     await expect(waiters.getByRole("row").nth(1)).toContainText("33,154");
   });
+
+  test("charts item popularity from the same top items", async ({ page }) => {
+    const api = await openReports(page);
+    const bars = page.getByRole("img", { name: /^Bar chart of units sold per menu item/ });
+    await expect(bars).toHaveAttribute(
+      "aria-label",
+      "Bar chart of units sold per menu item: Rolex 212, Passion Juice 168, Soda 300ml 150, " +
+        "Matoke & Beef Stew 131, Chicken Luwombo 96, Fried Tilapia & Chips 88",
+    );
+    for (const tick of ["0", "50", "100", "200", "250"]) {
+      await expect(bars.getByText(tick, { exact: true })).toBeVisible();
+    }
+    await expect(bars.getByTitle("Rolex: 212 sold, UGX 1,060,000")).toBeVisible();
+    expect(api.callsTo("GET", "/api/staff/reports/top-items/")).toHaveLength(1);
+  });
 });
 
 test.describe("payment methods", () => {
