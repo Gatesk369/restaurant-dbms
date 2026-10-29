@@ -64,6 +64,7 @@ test.describe("sign-in form", () => {
   test("submits with Enter and shows the credential rule first", async ({ page }) => {
     await open(page);
     await page.getByLabel("Username").fill("okello.peter");
+    await page.getByLabel("Password").fill("");
     await page.getByLabel("Password").press("Enter");
     await expect(page.getByRole("alert")).toHaveText(
       "Error: enter your username and a password of at least 4 characters.",

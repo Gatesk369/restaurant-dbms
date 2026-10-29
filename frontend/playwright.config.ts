@@ -16,7 +16,13 @@ export default defineConfig({
     command: `npm run build && npx vite preview --outDir build/client --host 127.0.0.1 --port ${PORT}`,
     url: `http://127.0.0.1:${PORT}`,
     // The primitives sheet (/styleguide) is only routed in this build.
-    env: { VITE_STYLEGUIDE: "true", VITE_PROTOTYPE_CONTROLS: "true" },
+    env: {
+      VITE_STYLEGUIDE: "true",
+      VITE_PROTOTYPE_CONTROLS: "true",
+      VITE_DEMO_PREFILL: "false",
+      VITE_DEMO_PASSWORD: "",
+      VITE_TABLE_IDS: "1-12",
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },

@@ -185,6 +185,7 @@ export default function Reports() {
             onPage={(offset) =>
               navigate(
                 `?${custom ? `from=${bundle.range.from}&to=${bundle.range.to}` : `range=${range}`}&offset=${offset}`,
+                { preventScrollReset: true },
               )
             }
           />
