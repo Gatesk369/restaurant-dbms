@@ -55,7 +55,7 @@ export interface PaymentHistoryPage {
 export async function loadPaymentHistory(
   range: Range,
   offset: number,
-  limit = 50,
+  limit = 15,
 ): Promise<PaymentHistoryPage> {
   const data = await request<{
     rows: (Omit<PaymentHistoryRow, "amount"> & { amount: Money })[];
