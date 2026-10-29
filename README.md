@@ -1,6 +1,26 @@
 # Restaurant DBMS
 
-Django backend for the restaurant app. Restaurant data is accessed with parameterized raw SQL and stored in Neon PostgreSQL.
+Restaurant DBMS is a full-stack restaurant ordering and operations system. Customers use a self-service ordering station, while restaurant staff use a role-based workspace to manage orders, payments, menu items, and sales reports.
+
+## How the system works
+
+1. A customer selects a table, browses available menu items, and submits an order with any kitchen instructions through the ordering station at `/station`.
+2. The Django API stores the order in PostgreSQL. The database assigns an available wait staff member when possible, or leaves the order pending until one becomes available.
+3. Wait staff and kitchen staff use the staff workspace to track and progress orders. Kitchen staff prepare orders; wait staff serve them. Managers can oversee orders and manage the menu.
+4. After an order is served, a cashier records its cash or mobile-money payment. The database creates its sales record, and managers can review sales and operational reports.
+
+The React frontend communicates with the Django REST API over HTTP. Staff sign in to a role-protected workspace; customers order through a separate station flow. The API enforces role access and uses parameterized SQL for restaurant data operations. PostgreSQL constraints and triggers preserve relationships and automate tasks such as calculating item subtotals, assigning wait staff, updating table availability, and recording sales.
+
+## Technology
+
+- **Frontend:** React 19, TypeScript, React Router 8, and Tailwind CSS 4; built as a single-page app.
+- **Backend:** Python 3.14, Django 6.1, and Django REST Framework.
+- **Database:** PostgreSQL hosted on Neon. Restaurant tables are defined in `backend/schema.sql` and accessed through parameterized raw SQL; Django migrations manage Django's own auth and admin tables.
+- **Development:** Vite-powered frontend dev server, with the API and database configured through local environment files.
+
+The customer station and staff workspace run as separate frontend routes. Staff features depend on role: cashiers handle payments, wait staff and kitchen staff handle order service, and managers also manage the menu and view reports. The cashier records payments after service; the customer ordering flow does not collect payment.
+
+For architecture details, data relationships, enterprise rules, endpoints, and reports, see the [DBMS design reference](docs/data-dictionary.md). For installation and commands, continue with the setup sections below. The [frontend README](frontend/README.md) covers frontend setup, environment variables, and scripts.
 
 ## Design Documentation
 
@@ -97,13 +117,54 @@ pre-commit run --all-files
 
 ## Checks and tests
 
-From `backend/`:
+### Backend tests
+
+The backend test script uses a local PostgreSQL server; it does not use Neon.
+Install PostgreSQL, make sure the server is running on `localhost:5432`, and
+configure a `postgres` database user with the password `postgres`. These are
+the connection settings currently built into `backend/run_tests.sh`.
+
+On Ubuntu or Debian, install and start PostgreSQL from a terminal:
+
+```bash
+sudo apt update
+sudo apt install postgresql
+sudo systemctl enable --now postgresql
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+pg_isready -h localhost -p 5432
+```
+
+The last command should report that the server is accepting connections. The
+PostgreSQL project provides [Ubuntu installation instructions](https://www.postgresql.org/download/linux/ubuntu/).
+
+On Windows, download and run the [official PostgreSQL installer](https://www.postgresql.org/download/windows/).
+It installs PostgreSQL as a Windows service. Set the `postgres` user's
+password to `postgres` during setup to match the test script, and ensure the
+service is running before testing. The installer page has the available
+versions and platform details.
+
+Then, from `backend/`, run the test suite with the project script:
+
+```bash
+./run_tests.sh
+```
+
+The script keeps the test database between runs for faster startup. Pass
+Django test arguments through the script when needed, for example:
+
+```bash
+./run_tests.sh orders payments
+```
+
+Run the backend configuration check separately:
 
 ```bash
 python manage.py check
-python manage.py test
-pytest
 ```
+
+For frontend unit tests, run `npm test` from `frontend/`. See the
+[frontend README](frontend/README.md) for its other test and quality-check
+commands.
 
 ## Load demonstration data
 
